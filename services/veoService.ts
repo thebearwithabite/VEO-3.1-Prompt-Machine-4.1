@@ -3,110 +3,74 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
+import { GoogleGenAI } from '@google/genai';
+
 // Types for Veo API
 export interface VeoGenerateRequest {
   prompt: string;
-  model: 'veo3' | 'veo3_fast';
-  aspectRatio?: '16:9' | '9:16' | 'Auto';
-  generationType?: 'TEXT_2_VIDEO' | 'FIRST_AND_LAST_FRAMES_2_VIDEO' | 'REFERENCE_2_VIDEO';
-  imageUrls?: string[]; // Note: Requires public URLs, not base64
-  seeds?: number;
-  watermark?: string;
-  enableTranslation?: boolean;
+  model: 'veo-3.1-lite-generate-preview' | 'veo-3.1-generate-preview';
+  aspectRatio?: '16:9' | '9:16';
+  resolution?: '720p' | '1080p';
+  imageBytes?: string;
+  mimeType?: string;
 }
 
 export interface VeoExtendRequest {
-  taskId: string;
+  videoUri: string;
   prompt: string;
-  seeds?: number;
-  watermark?: string;
-  callBackUrl?: string;
+  aspectRatio: '16:9' | '9:16';
 }
-
-export interface VeoGenerateResponse {
-  code: number;
-  msg: string;
-  data: {
-    taskId: string;
-  };
-}
-
-export interface VeoTaskInfoResponse {
-  code: number;
-  msg: string;
-  data: {
-    taskId: string;
-    successFlag: 0 | 1 | 2 | 3; // 0: Generating, 1: Success, 2: Failed, 3: Generation Failed
-    errorMessage?: string;
-    response?: {
-        resultUrls?: string[];
-        resolution?: string;
-    }
-  }
-}
-
-const BASE_URL = 'https://api.kie.ai/api/v1/veo';
 
 /**
  * Generates a video using Veo 3.1
  */
-export const generateVeoVideo = async (apiKey: string, params: VeoGenerateRequest): Promise<VeoGenerateResponse> => {
-  const response = await fetch(`${BASE_URL}/generate`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-        ...params,
-        // Defaulting to TEXT_2_VIDEO since we mostly work with base64 images which this API doesn't support directly
-        // unless uploaded elsewhere.
-        generationType: params.generationType || 'TEXT_2_VIDEO' 
-    })
+export const generateVeoVideo = async (params: VeoGenerateRequest) => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const config: any = {
+    numberOfVideos: 1,
+    resolution: params.resolution || '720p',
+    aspectRatio: params.aspectRatio || '16:9'
+  };
+
+  const operation = await ai.models.generateVideos({
+    model: params.model,
+    prompt: params.prompt,
+    image: params.imageBytes ? {
+      imageBytes: params.imageBytes,
+      mimeType: params.mimeType || 'image/png'
+    } : undefined,
+    config
   });
 
-  const data = await response.json();
-  
-  if (data.code !== 200) {
-      throw new Error(`Veo API Error (${data.code}): ${data.msg}`);
-  }
-  
-  return data;
+  return operation;
 };
 
 /**
  * Extends an existing Veo 3.1 video
  */
-export const extendVeoVideo = async (apiKey: string, params: VeoExtendRequest): Promise<VeoGenerateResponse> => {
-    const response = await fetch(`${BASE_URL}/extend`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify(params)
+export const extendVeoVideo = async (params: VeoExtendRequest) => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    const operation = await ai.models.generateVideos({
+      model: 'veo-3.1-generate-preview',
+      prompt: params.prompt,
+      video: { uri: params.videoUri },
+      config: {
+        numberOfVideos: 1,
+        resolution: '720p',
+        aspectRatio: params.aspectRatio,
+      }
     });
   
-    const data = await response.json();
-    
-    if (data.code !== 200) {
-        throw new Error(`Veo Extend Error (${data.code}): ${data.msg}`);
-    }
-    
-    return data;
+    return operation;
 };
 
 /**
  * Checks the status of a Veo generation task
  */
-export const getVeoTaskDetails = async (apiKey: string, taskId: string): Promise<VeoTaskInfoResponse> => {
-    const response = await fetch(`${BASE_URL}/record-info?taskId=${taskId}`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${apiKey}`
-        }
-    });
-
-    const data = await response.json();
-    return data;
+export const getVeoTaskDetails = async (operation: any) => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const updatedOperation = await ai.operations.getVideosOperation({ operation });
+    return updatedOperation;
 };

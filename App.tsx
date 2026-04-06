@@ -4,6 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 declare const JSZip: any;
+declare global {
+    interface Window {
+        aistudio: any;
+    }
+}
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import ApiKeyDialog from './components/ApiKeyDialog';
 import LoadingIndicator from './components/LoadingIndicator';
@@ -71,7 +76,6 @@ const App: React.FC = () => {
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [projectName, setProjectName] = useState<string | null>(null);
   const [scenePlans, setScenePlans] = useState<ScenePlan[] | null>(null);
-  const [veoApiKey, setVeoApiKey] = useState<string>('');
   
   // MCP State
   const [mcpConfig, setMcpConfig] = useState<McpServerConfig>({
@@ -86,6 +90,7 @@ const App: React.FC = () => {
   const [assets, setAssets] = useState<ProjectAsset[]>([]);
   const [guidanceFrames, setGuidanceFrames] = useState<GuidanceFrame[]>([]);
   const [isAnalyzingAssets, setIsAnalyzingAssets] = useState(false);
+  const [showVeoApproval, setShowVeoApproval] = useState<{shotId: string; cost: number} | null>(null);
   const stopGenerationRef = useRef(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastPrompt, setLastPrompt] = useState<{script: string; createKeyframes: boolean;} | null>(null);
@@ -96,9 +101,6 @@ const App: React.FC = () => {
 
   // Load from Local Storage
   useEffect(() => {
-    const savedApiKey = localStorage.getItem(VEO_API_KEY_STORAGE);
-    if (savedApiKey) setVeoApiKey(savedApiKey);
-
     const savedMcp = localStorage.getItem(MCP_CONFIG_STORAGE);
     if (savedMcp) {
         try { setMcpConfig(JSON.parse(savedMcp)); } catch (e) {}
@@ -122,63 +124,74 @@ const App: React.FC = () => {
 
   // Save to Local Storage
   useEffect(() => {
-    if (veoApiKey) localStorage.setItem(VEO_API_KEY_STORAGE, veoApiKey);
     localStorage.setItem(MCP_CONFIG_STORAGE, JSON.stringify(mcpConfig));
 
     if (appState === AppState.SUCCESS || assets.length > 0) {
       try {
-        const lightweightShotBook = shotBook?.map(shot => ({ ...shot, keyframeImage: undefined }));
-        const lightweightAssets = assets.map(asset => ({ ...asset, image: undefined }));
-        const lightweightGuidance = guidanceFrames.map(gf => ({ ...gf, image: undefined }));
         const stateToSave = { 
-            shotBook: lightweightShotBook, 
+            shotBook, 
             projectName, 
             logEntries, 
             apiCallSummary, 
             scenePlans, 
-            assets: lightweightAssets,
-            guidanceFrames: lightweightGuidance
+            assets,
+            guidanceFrames
         };
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stateToSave));
-      } catch (e) {}
+        const json = JSON.stringify(stateToSave);
+        // Local storage limit is usually 5MB. If we exceed it, we strip images.
+        if (json.length > 4500000) {
+             const lightweightShotBook = shotBook?.map(shot => ({ ...shot, keyframeImage: undefined }));
+             const lightweightAssets = assets.map(asset => ({ ...asset, image: undefined }));
+             const lightweightGuidance = guidanceFrames.map(gf => ({ ...gf, image: undefined }));
+             const lightweightState = { ...stateToSave, shotBook: lightweightShotBook, assets: lightweightAssets, guidanceFrames: lightweightGuidance };
+             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(lightweightState));
+             addLogEntry("Project too large for local storage. Images stripped from persistent cache. Please export ZIP to save work.", LogType.INFO);
+        } else {
+             localStorage.setItem(LOCAL_STORAGE_KEY, json);
+        }
+      } catch (e) {
+          console.error("Storage error:", e);
+      }
     }
-  }, [shotBook, appState, projectName, logEntries, apiCallSummary, scenePlans, assets, guidanceFrames, veoApiKey, mcpConfig]);
+  }, [shotBook, appState, projectName, logEntries, apiCallSummary, scenePlans, assets, guidanceFrames, mcpConfig]);
 
   // VEO Polling
   useEffect(() => {
-    if (!veoApiKey || !shotBook) return;
+    if (!shotBook) return;
     const activeShots = shotBook.filter(s => s.veoStatus === VeoStatus.GENERATING || s.veoStatus === VeoStatus.QUEUED);
     if (activeShots.length === 0) return;
     const pollInterval = setInterval(async () => {
         let updated = false;
         const newShotBook = await Promise.all(shotBook.map(async (shot) => {
-             if ((shot.veoStatus === VeoStatus.GENERATING || shot.veoStatus === VeoStatus.QUEUED) && shot.veoTaskId) {
+             if ((shot.veoStatus === VeoStatus.GENERATING || shot.veoStatus === VeoStatus.QUEUED) && shot.veoOperation) {
                  try {
-                     const info = await getVeoTaskDetails(veoApiKey, shot.veoTaskId);
-                     let newStatus: VeoStatus | undefined = shot.veoStatus;
-                     let newUrl = shot.veoVideoUrl;
-                     let error = shot.veoError;
-                     if (info.data.successFlag === 1) {
-                         newStatus = VeoStatus.COMPLETED;
-                         newUrl = info.data.response?.resultUrls?.[0];
-                         addLogEntry(`Video ready for ${shot.id}`, LogType.SUCCESS);
-                     } else if (info.data.successFlag === 2 || info.data.successFlag === 3) {
-                         newStatus = VeoStatus.FAILED;
-                         error = info.data.errorMessage || "Veo Generation failed";
-                         addLogEntry(`Video failed for ${shot.id}: ${error}`, LogType.ERROR);
-                     }
-                     if (newStatus !== shot.veoStatus) {
+                     const operation = await getVeoTaskDetails(shot.veoOperation);
+                     if (operation.done) {
+                         let newStatus: VeoStatus = VeoStatus.COMPLETED;
+                         let newUrl = operation.response?.generatedVideos?.[0]?.video?.uri;
+                         let error = undefined;
+                         
+                         if (!newUrl) {
+                             newStatus = VeoStatus.FAILED;
+                             error = "No video URL returned";
+                         }
+
                          updated = true;
-                         return { ...shot, veoStatus: newStatus, veoVideoUrl: newUrl, veoError: error };
+                         if (newStatus === VeoStatus.COMPLETED) addLogEntry(`Video ready for ${shot.id}`, LogType.SUCCESS);
+                         else addLogEntry(`Video failed for ${shot.id}: ${error}`, LogType.ERROR);
+                         
+                         return { ...shot, veoStatus: newStatus, veoVideoUrl: newUrl, veoError: error, veoOperation: operation };
                      }
-                 } catch (e) {}
+                 } catch (e) {
+                     console.error("Polling error:", e);
+                 }
              }
              return shot;
         }));
         if (updated) setShotBook(newShotBook as ShotBook);
-    }, 5000);
+    }, 10000);
     return () => clearInterval(pollInterval);
-  }, [shotBook, veoApiKey]);
+  }, [shotBook]);
 
   const addLogEntry = (message: string, type: LogType = LogType.INFO) => {
     setLogEntries((prev) => [...prev, {timestamp: new Date().toLocaleTimeString(), message, type}]);
@@ -518,19 +531,53 @@ const App: React.FC = () => {
   };
 
   const handleGenerateVeoVideo = async (shotId: string) => {
-      if (!veoApiKey) return;
       const shotIndex = shotBook?.findIndex(s => s.id === shotId) ?? -1;
       if (shotIndex === -1 || !shotBook) return;
       const shot = shotBook[shotIndex];
+      
+      // Calculate cost: $0.10 for Veo 3.1 Lite
+      const cost = 0.10;
+      setShowVeoApproval({ shotId, cost });
+  };
+
+  const confirmGenerateVeoVideo = async () => {
+      if (!showVeoApproval || !shotBook) return;
+      const { shotId } = showVeoApproval;
+      setShowVeoApproval(null);
+
+      // Platform requirement: Ensure API key is selected
+      if (window.aistudio && !(await window.aistudio.hasSelectedApiKey())) {
+          await window.aistudio.openSelectKey();
+      }
+
+      const shotIndex = shotBook.findIndex(s => s.id === shotId);
+      if (shotIndex === -1) return;
+      const shot = shotBook[shotIndex];
+
       setShotBook(prev => prev ? prev.map((s, i) => i === shotIndex ? { ...s, veoStatus: VeoStatus.QUEUED } : s) : null);
       try {
-          const resp = await generateVeoVideo(veoApiKey, { prompt: shot.keyframePromptText!, model: 'veo3_fast', aspectRatio: shot.veoJson?.veo_shot?.scene?.aspect_ratio || '16:9' });
-          setShotBook(prev => prev ? prev.map((s, i) => i === shotIndex ? { ...s, veoStatus: VeoStatus.GENERATING, veoTaskId: resp.data.taskId } : s) : null);
-      } catch (e) { setShotBook(prev => prev ? prev.map((s, i) => i === shotIndex ? { ...s, veoStatus: VeoStatus.FAILED, veoError: (e as Error).message } : s) : null); }
+          const operation = await generateVeoVideo({ 
+              prompt: shot.keyframePromptText!, 
+              model: 'veo-3.1-lite-generate-preview', 
+              aspectRatio: shot.veoJson?.veo_shot?.scene?.aspect_ratio as any || '16:9',
+              imageBytes: shot.keyframeImage || undefined,
+              mimeType: 'image/png'
+          });
+          setShotBook(prev => prev ? prev.map((s, i) => i === shotIndex ? { ...s, veoStatus: VeoStatus.GENERATING, veoOperation: operation } : s) : null);
+          addLogEntry(`Veo 3.1 Lite generation started for ${shotId}`, LogType.INFO);
+      } catch (e) { 
+          const errorMsg = (e as Error).message;
+          if (errorMsg.includes("Requested entity was not found")) {
+              addLogEntry("API Key error. Please re-select your API key.", LogType.ERROR);
+              if (window.aistudio) await window.aistudio.openSelectKey();
+          }
+          setShotBook(prev => prev ? prev.map((s, i) => i === shotIndex ? { ...s, veoStatus: VeoStatus.FAILED, veoError: errorMsg } : s) : null); 
+          addLogEntry(`Veo generation failed: ${errorMsg}`, LogType.ERROR);
+      }
   };
 
   const handleExtendVeoVideo = async (originalShotId: string, prompt: string) => {
-      if (!veoApiKey || !shotBook) return;
+      if (!shotBook) return;
       const originalShotIndex = shotBook.findIndex(s => s.id === originalShotId);
       if (originalShotIndex === -1) return;
       const originalShot = shotBook[originalShotIndex];
@@ -545,20 +592,64 @@ const App: React.FC = () => {
       newShotBook.splice(originalShotIndex + 1, 0, newShot);
       setShotBook(newShotBook);
       try {
-          const resp = await extendVeoVideo(veoApiKey, { taskId: originalShot.veoTaskId!, prompt: prompt });
-          setShotBook(prev => prev ? prev.map(s => s.id === newShotId ? { ...s, veoStatus: VeoStatus.GENERATING, veoTaskId: resp.data.taskId } : s) : null);
+          const operation = await extendVeoVideo({ 
+              videoUri: originalShot.veoVideoUrl!, 
+              prompt: prompt,
+              aspectRatio: originalShot.veoJson?.veo_shot?.scene?.aspect_ratio as any || '16:9'
+          });
+          setShotBook(prev => prev ? prev.map(s => s.id === newShotId ? { ...s, veoStatus: VeoStatus.GENERATING, veoOperation: operation } : s) : null);
       } catch (e) { setShotBook(prev => prev ? prev.map(s => s.id === newShotId ? { ...s, veoStatus: VeoStatus.FAILED, veoError: (e as Error).message } : s) : null); }
   };
 
   const handleLoadProject = (json: string) => { try { const p = JSON.parse(json); if (p.shotBook) setShotBook(p.shotBook); if (p.projectName) setProjectName(p.projectName); setAssets(p.assets || []); setGuidanceFrames(p.guidanceFrames || []); setAppState(AppState.SUCCESS); } catch (e) {} };
   const handleSaveProject = () => { const blob = new Blob([JSON.stringify({ shotBook, projectName, logEntries, apiCallSummary, scenePlans, assets, guidanceFrames }, null, 2)], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${projectName || 'veo'}.json`; a.click(); };
-  const handleExportPackage = async () => { if (!JSZip) return; const zip = new JSZip(); const root = zip.folder(projectName || "project"); root.file("shot_list.json", JSON.stringify(shotBook, null, 2)); const content = await zip.generateAsync({type: "blob"}); const url = URL.createObjectURL(content); const a = document.createElement('a'); a.href = url; a.download = `${projectName || 'package'}.zip`; a.click(); };
+  const handleDownloadKeyframesZip = async () => {
+      if (!JSZip || !shotBook) return;
+      const zip = new JSZip();
+      const folder = zip.folder("keyframes");
+      shotBook.forEach(shot => {
+          if (shot.keyframeImage) {
+              folder.file(`${shot.id}.png`, shot.keyframeImage, { base64: true });
+          }
+      });
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${projectName || 'project'}_keyframes.zip`;
+      a.click();
+  };
+  const handleExportPackage = async () => { 
+      if (!JSZip || !shotBook) return; 
+      const zip = new JSZip(); 
+      const root = zip.folder(projectName || "project"); 
+      root.file("shot_list.json", JSON.stringify(shotBook, null, 2)); 
+      const imgFolder = root.folder("keyframes");
+      shotBook.forEach(shot => {
+          if (shot.keyframeImage) {
+              imgFolder.file(`${shot.id}.png`, shot.keyframeImage, { base64: true });
+          }
+      });
+      const content = await zip.generateAsync({type: "blob"}); 
+      const url = URL.createObjectURL(content); 
+      const a = document.createElement('a'); 
+      a.href = url; 
+      a.download = `${projectName || 'package'}.zip`; 
+      a.click(); 
+  };
 
   return (
     <div className="min-h-screen font-sans text-gray-100 bg-[#121212]">
       {appState === AppState.LOADING && <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm"><LoadingIndicator /><div className="absolute bottom-10"><button onClick={() => { stopGenerationRef.current = true; setIsProcessing(false); }} className="px-6 py-2 bg-red-800 hover:bg-red-700 text-white rounded-lg flex items-center gap-2"><StopCircleIcon className="w-5 h-5" /> Stop</button></div></div>}
       {showApiKeyDialog && <ApiKeyDialog onContinue={() => setShowApiKeyDialog(false)} />}
       <ConfirmDialog isOpen={showNewProjectDialog} title="Start New Project?" message="Clear script and shot list? Assets will be kept." onConfirm={() => { setShotBook(null); setProjectName(null); setLogEntries([]); setAppState(AppState.IDLE); setShowNewProjectDialog(false); }} onCancel={() => setShowNewProjectDialog(false)} />
+      <ConfirmDialog 
+          isOpen={!!showVeoApproval} 
+          title="Approve Veo Generation Cost" 
+          message={`Generating this video with Veo 3.1 Lite will cost approximately $${showVeoApproval?.cost.toFixed(2)}. Do you want to proceed?`} 
+          onConfirm={confirmGenerateVeoVideo} 
+          onCancel={() => setShowVeoApproval(null)} 
+      />
       <ConfirmDialog isOpen={showResetDialog} title="Reset Application?" message="This will clear ALL data including assets and guidance frames. This cannot be undone." onConfirm={() => { setShotBook(null); setProjectName(null); setLogEntries([]); setAppState(AppState.IDLE); setAssets([]); setGuidanceFrames([]); setApiCallSummary({ pro: 0, flash: 0, image: 0, proTokens: {input: 0, output: 0}, flashTokens: {input: 0, output: 0} }); localStorage.removeItem(LOCAL_STORAGE_KEY); setShowResetDialog(false); }} onCancel={() => setShowResetDialog(false)} />
       <StorageInfoDialog isOpen={showStorageInfoDialog} onClose={() => setShowStorageInfoDialog(false)} />
       <main className="flex flex-col items-center p-4 md:p-8 min-h-screen max-w-[1920px] mx-auto">
@@ -579,7 +670,7 @@ const App: React.FC = () => {
             <ProjectSetupForm onGenerate={handleGenerate} isGenerating={false} onLoadProject={handleLoadProject} assets={assets} onAnalyzeScriptForAssets={handleAnalyzeScriptForAssets} isAnalyzingAssets={isAnalyzingAssets} onAddAsset={handleAddAsset} onRemoveAsset={handleRemoveAsset} onUpdateAssetImage={handleUpdateAssetImage} />
           </div>
         )}
-        {appState !== AppState.IDLE && shotBook && <ShotBookDisplay shotBook={shotBook} logEntries={logEntries} projectName={projectName} scenePlans={scenePlans} apiCallSummary={apiCallSummary} appVersion={PROJECT_VERSION} onNewProject={() => setShowNewProjectDialog(true)} onReset={() => setShowResetDialog(true)} onUpdateShot={handleUpdateShot} onGenerateSpecificKeyframe={handleGenerateSpecificKeyframe} onRefineShot={handleRefineShot} allAssets={assets} onToggleAssetForShot={handleToggleAssetForShot} onExportAllJsons={() => {}} onExportHtmlReport={() => {}} onSaveProject={handleSaveProject} onDownloadKeyframesZip={() => {}} onExportPackage={handleExportPackage} onShowStorageInfo={() => setShowStorageInfoDialog(true)} isProcessing={isProcessing} onStopGeneration={() => { stopGenerationRef.current = true; setIsProcessing(false); }} veoApiKey={veoApiKey} onSetVeoApiKey={setVeoApiKey} onGenerateVideo={handleGenerateVeoVideo} onExtendVeoVideo={handleExtendVeoVideo} mcpConfig={mcpConfig} onSetMcpUrl={(url) => setMcpConfig(prev => ({ ...prev, url }))} onConnectMcp={handleConnectMcp} onSyncToResolve={handleSyncShotToMcp} guidanceFrames={guidanceFrames} onAddGuidanceFrame={handleAddGuidanceFrame} onRemoveGuidanceFrame={handleRemoveGuidanceFrame} onToggleGuidanceForShot={handleToggleGuidanceForShot} onGenerateAllKeyframes={handleGenerateAllKeyframes} />}
+        {appState !== AppState.IDLE && shotBook && <ShotBookDisplay shotBook={shotBook} logEntries={logEntries} projectName={projectName} scenePlans={scenePlans} apiCallSummary={apiCallSummary} appVersion={PROJECT_VERSION} onNewProject={() => setShowNewProjectDialog(true)} onReset={() => setShowResetDialog(true)} onUpdateShot={handleUpdateShot} onGenerateSpecificKeyframe={handleGenerateSpecificKeyframe} onRefineShot={handleRefineShot} allAssets={assets} onToggleAssetForShot={handleToggleAssetForShot} onExportAllJsons={() => {}} onExportHtmlReport={() => {}} onSaveProject={handleSaveProject} onDownloadKeyframesZip={handleDownloadKeyframesZip} onExportPackage={handleExportPackage} onShowStorageInfo={() => setShowStorageInfoDialog(true)} isProcessing={isProcessing} onStopGeneration={() => { stopGenerationRef.current = true; setIsProcessing(false); }} onGenerateVideo={handleGenerateVeoVideo} onExtendVeoVideo={handleExtendVeoVideo} mcpConfig={mcpConfig} onSetMcpUrl={(url) => setMcpConfig(prev => ({ ...prev, url }))} onConnectMcp={handleConnectMcp} onSyncToResolve={handleSyncShotToMcp} guidanceFrames={guidanceFrames} onAddGuidanceFrame={handleAddGuidanceFrame} onRemoveGuidanceFrame={handleRemoveGuidanceFrame} onToggleGuidanceForShot={handleToggleGuidanceForShot} onGenerateAllKeyframes={handleGenerateAllKeyframes} />}
         <footer className="mt-auto py-6 text-center text-gray-600 text-sm"><p>Powered by Google Gemini & Veo 3.1 • DaVinci Resolve Integration via MCP</p></footer>
       </main>
     </div>

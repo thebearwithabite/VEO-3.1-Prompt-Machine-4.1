@@ -112,7 +112,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
             {shot.veoStatus === VeoStatus.COMPLETED && shot.veoVideoUrl ? (
                 <video src={shot.veoVideoUrl} controls className="w-full h-full object-cover" />
             ) : shot.keyframeImage ? (
-              <img src={`data:image/png;base64,${shot.keyframeImage}`} className="w-full h-full object-cover" />
+              <img src={`data:image/png;base64,${shot.keyframeImage}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             ) : (
               <div className="flex flex-col items-center text-gray-500"><FilmIcon className="w-12 h-12 mb-2" /><span className="text-sm">No Preview</span></div>
             )}
@@ -249,8 +249,6 @@ interface ShotBookDisplayProps {
   onShowStorageInfo: () => void;
   isProcessing: boolean;
   onStopGeneration: () => void;
-  veoApiKey: string;
-  onSetVeoApiKey: (key: string) => void;
   onGenerateVideo: (shotId: string) => void;
   onExtendVeoVideo: (originalShotId: string, prompt: string) => void;
   mcpConfig: McpServerConfig;
@@ -284,8 +282,6 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
   onShowStorageInfo,
   isProcessing,
   onStopGeneration,
-  veoApiKey,
-  onSetVeoApiKey,
   onGenerateVideo,
   onExtendVeoVideo,
   mcpConfig,
@@ -297,6 +293,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
   onRemoveGuidanceFrame,
   onToggleGuidanceForShot,
   onGenerateAllKeyframes,
+  onDownloadKeyframesZip,
 }) => {
   const [showSettings, setShowSettings] = useState(false);
   const mediaInputRef = useRef<HTMLInputElement>(null);
@@ -333,8 +330,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
                              <VideoIcon className="w-4 h-4 text-indigo-400" />
                              <h4 className="font-bold text-white text-sm">VEO API Settings</h4>
                           </div>
-                          <input type="password" value={veoApiKey} onChange={(e) => onSetVeoApiKey(e.target.value)} placeholder="Enter Veo Bearer Token" className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
-                          <p className="text-[10px] text-gray-500 mt-1 italic">Required for video generation and extensions.</p>
+                          <p className="text-[10px] text-gray-400 mt-1 italic">Veo 3.1 API keys are managed by the platform. Ensure you have a paid API key selected in your settings.</p>
                       </div>
                       <div className="border-t border-gray-700 pt-4">
                           <div className="flex items-center gap-2 mb-2">
@@ -359,6 +355,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
               Generate All Keyframes
           </button>
           <button onClick={onSaveProject} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white font-semibold rounded-lg text-sm">Save Backup</button>
+          <button onClick={onDownloadKeyframesZip} className="px-4 py-2 bg-indigo-900/40 hover:bg-indigo-900/60 text-indigo-300 font-semibold rounded-lg text-sm border border-indigo-800/50">Download Keyframes ZIP</button>
           <button onClick={onExportPackage} className="px-4 py-2 bg-green-700 hover:bg-green-600 text-white font-semibold rounded-lg text-sm border border-green-500">Export ZIP Package</button>
         </div>
       </header>
@@ -385,7 +382,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
                 <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                     {guidanceFrames.map(f => (
                         <div key={f.id} className="relative aspect-square bg-black rounded border border-gray-600 group overflow-hidden">
-                            <img src={`data:image/png;base64,${f.image.base64}`} className="w-full h-full object-cover" />
+                            <img src={`data:image/png;base64,${f.image.base64}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             <button 
                                 onClick={() => onRemoveGuidanceFrame(f.id)}
                                 className="absolute top-1 right-1 p-0.5 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"

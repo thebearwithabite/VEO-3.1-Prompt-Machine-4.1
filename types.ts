@@ -150,6 +150,7 @@ export interface Shot {
   veoStatus?: VeoStatus;
   veoVideoUrl?: string;
   veoError?: string;
+  veoOperation?: any;
   mcpSynced?: boolean;
 }
 

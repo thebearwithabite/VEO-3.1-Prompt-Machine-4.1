@@ -254,6 +254,7 @@ const AssetCard: React.FC<{
             src={`data:${asset.image.mimeType};base64,${asset.image.base64}`}
             alt={asset.name}
             className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity"
+            referrerPolicy="no-referrer"
           />
         ) : (
           <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-700/50 transition-colors">
