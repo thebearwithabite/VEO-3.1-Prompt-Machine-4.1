@@ -238,6 +238,7 @@ interface ShotBookDisplayProps {
   apiCallSummary: ApiCallSummary;
   appVersion: string;
   onNewProject: () => void;
+  onReset: () => void;
   onUpdateShot: (shot: Shot) => void;
   onGenerateSpecificKeyframe: (shotId: string) => void; 
   onRefineShot: (shotId: string, feedback: string) => void;
@@ -272,6 +273,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
   logEntries,
   projectName,
   onNewProject,
+  onReset,
   onUpdateShot,
   onGenerateSpecificKeyframe, 
   onRefineShot,
@@ -345,8 +347,9 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
                           </button>
                           {mcpConfig.connected && <p className="text-[10px] text-green-400 mt-2 text-center">✓ {mcpConfig.tools.length} Tools Discovered</p>}
                       </div>
-                      <div className="border-t border-gray-700 pt-4 mt-4">
-                          <button onClick={onNewProject} className="w-full py-2 rounded text-xs font-bold bg-red-900/40 text-red-400 border border-red-900/50 hover:bg-red-900/60">Destroy Project & Reset</button>
+                      <div className="border-t border-gray-700 pt-4 mt-4 space-y-2">
+                          <button onClick={onNewProject} className="w-full py-2 rounded text-xs font-bold bg-red-900/40 text-red-400 border border-red-900/50 hover:bg-red-900/60">New Project (Keep Assets)</button>
+                          <button onClick={onReset} className="w-full py-2 rounded text-xs font-bold bg-red-600 text-white hover:bg-red-500">Hard Reset App (Clear All)</button>
                       </div>
                   </div>
               )}

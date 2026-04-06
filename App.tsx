@@ -81,6 +81,7 @@ const App: React.FC = () => {
   });
 
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
   const [showStorageInfoDialog, setShowStorageInfoDialog] = useState(false);
   const [assets, setAssets] = useState<ProjectAsset[]>([]);
   const [guidanceFrames, setGuidanceFrames] = useState<GuidanceFrame[]>([]);
@@ -558,10 +559,27 @@ const App: React.FC = () => {
       {appState === AppState.LOADING && <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm"><LoadingIndicator /><div className="absolute bottom-10"><button onClick={() => { stopGenerationRef.current = true; setIsProcessing(false); }} className="px-6 py-2 bg-red-800 hover:bg-red-700 text-white rounded-lg flex items-center gap-2"><StopCircleIcon className="w-5 h-5" /> Stop</button></div></div>}
       {showApiKeyDialog && <ApiKeyDialog onContinue={() => setShowApiKeyDialog(false)} />}
       <ConfirmDialog isOpen={showNewProjectDialog} title="Start New Project?" message="Clear script and shot list? Assets will be kept." onConfirm={() => { setShotBook(null); setProjectName(null); setLogEntries([]); setAppState(AppState.IDLE); setShowNewProjectDialog(false); }} onCancel={() => setShowNewProjectDialog(false)} />
+      <ConfirmDialog isOpen={showResetDialog} title="Reset Application?" message="This will clear ALL data including assets and guidance frames. This cannot be undone." onConfirm={() => { setShotBook(null); setProjectName(null); setLogEntries([]); setAppState(AppState.IDLE); setAssets([]); setGuidanceFrames([]); setApiCallSummary({ pro: 0, flash: 0, image: 0, proTokens: {input: 0, output: 0}, flashTokens: {input: 0, output: 0} }); localStorage.removeItem(LOCAL_STORAGE_KEY); setShowResetDialog(false); }} onCancel={() => setShowResetDialog(false)} />
       <StorageInfoDialog isOpen={showStorageInfoDialog} onClose={() => setShowStorageInfoDialog(false)} />
       <main className="flex flex-col items-center p-4 md:p-8 min-h-screen max-w-[1920px] mx-auto">
-        {appState === AppState.IDLE && <div className="flex flex-col items-center w-full max-w-4xl animate-in fade-in duration-700"><div className="mb-8 text-center"><h1 className="text-5xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 mb-4 tracking-tight">VEO Prompt Machine</h1><p className="text-xl text-gray-400 max-w-2xl mx-auto">Transform scripts into VEO 3.1 prompts and DaVinci Resolve timelines.</p></div><ProjectSetupForm onGenerate={handleGenerate} isGenerating={false} onLoadProject={handleLoadProject} assets={assets} onAnalyzeScriptForAssets={handleAnalyzeScriptForAssets} isAnalyzingAssets={isAnalyzingAssets} onAddAsset={handleAddAsset} onRemoveAsset={handleRemoveAsset} onUpdateAssetImage={handleUpdateAssetImage} /></div>}
-        {appState !== AppState.IDLE && shotBook && <ShotBookDisplay shotBook={shotBook} logEntries={logEntries} projectName={projectName} scenePlans={scenePlans} apiCallSummary={apiCallSummary} appVersion={PROJECT_VERSION} onNewProject={() => setShowNewProjectDialog(true)} onUpdateShot={handleUpdateShot} onGenerateSpecificKeyframe={handleGenerateSpecificKeyframe} onRefineShot={handleRefineShot} allAssets={assets} onToggleAssetForShot={handleToggleAssetForShot} onExportAllJsons={() => {}} onExportHtmlReport={() => {}} onSaveProject={handleSaveProject} onDownloadKeyframesZip={() => {}} onExportPackage={handleExportPackage} onShowStorageInfo={() => setShowStorageInfoDialog(true)} isProcessing={isProcessing} onStopGeneration={() => { stopGenerationRef.current = true; setIsProcessing(false); }} veoApiKey={veoApiKey} onSetVeoApiKey={setVeoApiKey} onGenerateVideo={handleGenerateVeoVideo} onExtendVeoVideo={handleExtendVeoVideo} mcpConfig={mcpConfig} onSetMcpUrl={(url) => setMcpConfig(prev => ({ ...prev, url }))} onConnectMcp={handleConnectMcp} onSyncToResolve={handleSyncShotToMcp} guidanceFrames={guidanceFrames} onAddGuidanceFrame={handleAddGuidanceFrame} onRemoveGuidanceFrame={handleRemoveGuidanceFrame} onToggleGuidanceForShot={handleToggleGuidanceForShot} onGenerateAllKeyframes={handleGenerateAllKeyframes} />}
+        {appState === AppState.IDLE && (
+          <div className="flex flex-col items-center w-full max-w-4xl animate-in fade-in duration-700">
+            <div className="mb-8 text-center relative w-full">
+              <div className="absolute top-0 right-0">
+                <button 
+                  onClick={() => setShowResetDialog(true)}
+                  className="px-3 py-1 text-xs bg-red-900/30 hover:bg-red-800/50 text-red-300 border border-red-800/50 rounded transition-colors"
+                >
+                  Reset App
+                </button>
+              </div>
+              <h1 className="text-5xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 mb-4 tracking-tight">VEO Prompt Machine</h1>
+              <p className="text-xl text-gray-400 max-w-2xl mx-auto">Transform scripts into VEO 3.1 prompts and DaVinci Resolve timelines.</p>
+            </div>
+            <ProjectSetupForm onGenerate={handleGenerate} isGenerating={false} onLoadProject={handleLoadProject} assets={assets} onAnalyzeScriptForAssets={handleAnalyzeScriptForAssets} isAnalyzingAssets={isAnalyzingAssets} onAddAsset={handleAddAsset} onRemoveAsset={handleRemoveAsset} onUpdateAssetImage={handleUpdateAssetImage} />
+          </div>
+        )}
+        {appState !== AppState.IDLE && shotBook && <ShotBookDisplay shotBook={shotBook} logEntries={logEntries} projectName={projectName} scenePlans={scenePlans} apiCallSummary={apiCallSummary} appVersion={PROJECT_VERSION} onNewProject={() => setShowNewProjectDialog(true)} onReset={() => setShowResetDialog(true)} onUpdateShot={handleUpdateShot} onGenerateSpecificKeyframe={handleGenerateSpecificKeyframe} onRefineShot={handleRefineShot} allAssets={assets} onToggleAssetForShot={handleToggleAssetForShot} onExportAllJsons={() => {}} onExportHtmlReport={() => {}} onSaveProject={handleSaveProject} onDownloadKeyframesZip={() => {}} onExportPackage={handleExportPackage} onShowStorageInfo={() => setShowStorageInfoDialog(true)} isProcessing={isProcessing} onStopGeneration={() => { stopGenerationRef.current = true; setIsProcessing(false); }} veoApiKey={veoApiKey} onSetVeoApiKey={setVeoApiKey} onGenerateVideo={handleGenerateVeoVideo} onExtendVeoVideo={handleExtendVeoVideo} mcpConfig={mcpConfig} onSetMcpUrl={(url) => setMcpConfig(prev => ({ ...prev, url }))} onConnectMcp={handleConnectMcp} onSyncToResolve={handleSyncShotToMcp} guidanceFrames={guidanceFrames} onAddGuidanceFrame={handleAddGuidanceFrame} onRemoveGuidanceFrame={handleRemoveGuidanceFrame} onToggleGuidanceForShot={handleToggleGuidanceForShot} onGenerateAllKeyframes={handleGenerateAllKeyframes} />}
         <footer className="mt-auto py-6 text-center text-gray-600 text-sm"><p>Powered by Google Gemini & Veo 3.1 • DaVinci Resolve Integration via MCP</p></footer>
       </main>
     </div>

@@ -23,7 +23,7 @@ export interface ProjectAsset {
 ### 2. AI Extraction Service
 Located in `services/geminiService.ts` -> `extractAssetsFromScript`.
 
-*   **Model:** `gemini-3-pro-preview`
+*   **Model:** `gemini-3.1-pro-preview`
 *   **Input:** Raw script text.
 *   **Output:** JSON Array of assets `{ name, description, type }`.
 *   **Function:** Analyzes the script to determine the "Cast List" and "Set List" before visualization begins.

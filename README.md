@@ -14,7 +14,7 @@ An interactive Director's Assistant that transforms creative scripts into struct
     *   **Shot Breakdown:** Breaks script into a detailed shot list with natural language pitches.
     *   **Scene Planning:** Generates strategic `ScenePlan` logic (narrative beats, timing, extending shots) for VEO.
     *   **VEO 3.1 JSON Generation:** Creates production-ready JSON prompts, handling complex "Extend" logic for longer sequences.
-    *   **AI Keyframing:** Generates 2K cinematic keyframes using `gemini-3-pro-image-preview`.
+    *   **AI Keyframing:** Generates 2K cinematic keyframes using `gemini-3.1-flash-image-preview`.
 *   **Interactive Shot Book:**
     *   Real-time status tracking.
     *   In-app JSON editor.
@@ -41,9 +41,9 @@ We provide structured exports designed to fit into your production workflow or A
 
 *   **Frontend:** React, TypeScript, TailwindCSS
 *   **AI Models (Google Gemini API):**
-    *   `gemini-3-pro-preview`: Logic, Script Analysis, Scene Planning, VEO JSON.
-    *   `gemini-3-pro-image-preview`: High-fidelity Keyframe Generation (2K).
-    *   `gemini-2.5-flash`: Lightweight text tasks (naming).
+    *   `gemini-3.1-pro-preview`: Logic, Script Analysis, Scene Planning, VEO JSON.
+    *   `gemini-3.1-flash-image-preview`: High-fidelity Keyframe Generation (2K).
+    *   `gemini-3-flash-preview`: Lightweight text tasks (naming, audio transcription).
 
 ## Workflow Guide
 
