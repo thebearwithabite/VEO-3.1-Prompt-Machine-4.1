@@ -143,6 +143,7 @@ export interface Shot {
   veoJson?: VeoShotWrapper;
   keyframePromptText?: string | null;
   keyframeImage?: string | null;
+  keyframeHistory?: string[]; // Array of base64 strings
   errorMessage?: string;
   selectedAssetIds: string[];
   guidanceFrameIds: string[]; // Reference to GuidanceFrame IDs

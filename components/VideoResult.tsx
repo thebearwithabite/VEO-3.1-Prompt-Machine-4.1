@@ -86,6 +86,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
   const [isExtendMode, setIsExtendMode] = useState(false);
   const [extendPrompt, setExtendPrompt] = useState('');
   const [showGuidancePicker, setShowGuidancePicker] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     setEditedJson(shot.veoJson ? JSON.stringify(shot.veoJson, null, 2) : '');
@@ -121,7 +122,44 @@ const ShotCard: React.FC<ShotCardProps> = ({
                     <CheckCircle2Icon className="w-4 h-4" />
                 </div>
             )}
+            {shot.keyframeImage && (
+                <div className="absolute bottom-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {shot.keyframeHistory && shot.keyframeHistory.length > 1 && (
+                        <button 
+                            onClick={() => setShowHistory(true)}
+                            className="p-1.5 bg-black/60 text-white rounded hover:bg-indigo-600 transition-colors"
+                            title="View History"
+                        >
+                            <ClockIcon className="w-4 h-4" />
+                        </button>
+                    )}
+                    <button 
+                        onClick={() => {
+                            const a = document.createElement('a');
+                            a.href = `data:image/png;base64,${shot.keyframeImage}`;
+                            a.download = `${shot.id}_keyframe.png`;
+                            a.click();
+                        }}
+                        className="p-1.5 bg-black/60 text-white rounded hover:bg-indigo-600 transition-colors"
+                        title="Download Keyframe"
+                    >
+                        <DownloadIcon className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
           </div>
+          {shot.keyframeHistory && shot.keyframeHistory.length > 1 && (
+            <div className="flex justify-center gap-1.5 mb-3">
+              {shot.keyframeHistory.map((img, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => onUpdateShot({...shot, keyframeImage: img})}
+                  className={`w-2 h-2 rounded-full transition-all ${shot.keyframeImage === img ? 'bg-indigo-500 scale-125' : 'bg-gray-600 hover:bg-gray-500'}`}
+                  title={`Version ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-indigo-400">{shot.id}</h3>
           </div>
@@ -224,6 +262,78 @@ const ShotCard: React.FC<ShotCardProps> = ({
                 </>
             )}
           </div>
+
+          {/* History Modal */}
+          {showHistory && shot.keyframeHistory && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                  <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+                      <div className="p-6 border-b border-gray-700 flex items-center justify-between bg-gray-800/50">
+                          <div>
+                              <h3 className="text-xl font-bold text-white">Keyframe History</h3>
+                              <p className="text-sm text-gray-400">All versions generated for {shot.id}</p>
+                          </div>
+                          <button 
+                              onClick={() => setShowHistory(false)}
+                              className="p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                          >
+                              <XMarkIcon className="w-6 h-6" />
+                          </button>
+                      </div>
+                      
+                      <div className="flex-1 overflow-y-auto p-6 bg-black/20">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                              {shot.keyframeHistory.map((img, idx) => (
+                                  <div 
+                                      key={idx} 
+                                      className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                                          shot.keyframeImage === img ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-gray-700 hover:border-gray-500'
+                                      }`}
+                                      onClick={() => {
+                                          onUpdateShot({ ...shot, keyframeImage: img });
+                                      }}
+                                  >
+                                      <img 
+                                          src={`data:image/png;base64,${img}`} 
+                                          alt={`Version ${idx + 1}`}
+                                          className="w-full h-full object-cover"
+                                      />
+                                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                          <span className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-full shadow-lg">
+                                              {shot.keyframeImage === img ? 'Current Selection' : 'Select Version'}
+                                          </span>
+                                      </div>
+                                      <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded text-[10px] font-bold text-white/80 uppercase tracking-wider">
+                                          v{idx + 1}
+                                      </div>
+                                      <button 
+                                          onClick={(e) => {
+                                              e.stopPropagation();
+                                              const a = document.createElement('a');
+                                              a.href = `data:image/png;base64,${img}`;
+                                              a.download = `${shot.id}_v${idx + 1}.png`;
+                                              a.click();
+                                          }}
+                                          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white/70 hover:text-white hover:bg-indigo-600 transition-all opacity-0 group-hover:opacity-100"
+                                          title="Download this version"
+                                      >
+                                          <DownloadIcon className="w-4 h-4" />
+                                      </button>
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
+                      
+                      <div className="p-6 border-t border-gray-700 bg-gray-800/50 flex justify-end">
+                          <button 
+                              onClick={() => setShowHistory(false)}
+                              className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors"
+                          >
+                              Done
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          )}
         </div>
       </div>
     </div>
@@ -355,8 +465,11 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
               Generate All Keyframes
           </button>
           <button onClick={onSaveProject} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white font-semibold rounded-lg text-sm">Save Backup</button>
-          <button onClick={onDownloadKeyframesZip} className="px-4 py-2 bg-indigo-900/40 hover:bg-indigo-900/60 text-indigo-300 font-semibold rounded-lg text-sm border border-indigo-800/50">Download Keyframes ZIP</button>
+          <button onClick={onDownloadKeyframesZip} className="px-4 py-2 bg-indigo-900/40 hover:bg-indigo-900/60 text-indigo-300 font-semibold rounded-lg text-sm border border-indigo-800/50">Download All Images</button>
           <button onClick={onExportPackage} className="px-4 py-2 bg-green-700 hover:bg-green-600 text-white font-semibold rounded-lg text-sm border border-green-500">Export ZIP Package</button>
+          <button onClick={onShowStorageInfo} className="p-2 bg-gray-800 border border-gray-600 text-gray-400 hover:text-white rounded-lg transition-all" title="Storage Info">
+              <InfoIcon className="w-5 h-5" />
+          </button>
         </div>
       </header>
 

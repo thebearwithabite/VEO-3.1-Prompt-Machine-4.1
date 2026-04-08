@@ -98,6 +98,7 @@ const App: React.FC = () => {
   const [apiCallSummary, setApiCallSummary] = useState<ApiCallSummary>({
     pro: 0, flash: 0, image: 0, proTokens: {input: 0, output: 0}, flashTokens: {input: 0, output: 0}
   });
+  const hasWarnedLargeProject = useRef(false);
 
   // Load from Local Storage
   useEffect(() => {
@@ -125,7 +126,9 @@ const App: React.FC = () => {
   // Save to Local Storage
   useEffect(() => {
     localStorage.setItem(MCP_CONFIG_STORAGE, JSON.stringify(mcpConfig));
+  }, [mcpConfig]);
 
+  useEffect(() => {
     if (appState === AppState.SUCCESS || assets.length > 0) {
       try {
         const stateToSave = { 
@@ -140,20 +143,34 @@ const App: React.FC = () => {
         const json = JSON.stringify(stateToSave);
         // Local storage limit is usually 5MB. If we exceed it, we strip images.
         if (json.length > 4500000) {
-             const lightweightShotBook = shotBook?.map(shot => ({ ...shot, keyframeImage: undefined }));
+             const lightweightShotBook = shotBook?.map(shot => ({ ...shot, keyframeImage: undefined, keyframeHistory: undefined }));
              const lightweightAssets = assets.map(asset => ({ ...asset, image: undefined }));
              const lightweightGuidance = guidanceFrames.map(gf => ({ ...gf, image: undefined }));
              const lightweightState = { ...stateToSave, shotBook: lightweightShotBook, assets: lightweightAssets, guidanceFrames: lightweightGuidance };
              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(lightweightState));
-             addLogEntry("Project too large for local storage. Images stripped from persistent cache. Please export ZIP to save work.", LogType.INFO);
+             
+             if (!hasWarnedLargeProject.current) {
+                const hasKeyframes = shotBook?.some(s => s.keyframeImage);
+                const hasAssets = assets.some(a => a.image);
+                const hasGuidance = guidanceFrames.some(g => g.image);
+                
+                let message = "Project too large for local storage. ";
+                if (hasAssets || hasGuidance) message += "Assets and ";
+                if (hasKeyframes) message += "Keyframes ";
+                message += "stripped from persistent cache. Please export ZIP to save work.";
+                
+                addLogEntry(message, LogType.INFO);
+                hasWarnedLargeProject.current = true;
+             }
         } else {
              localStorage.setItem(LOCAL_STORAGE_KEY, json);
+             hasWarnedLargeProject.current = false;
         }
       } catch (e) {
           console.error("Storage error:", e);
       }
     }
-  }, [shotBook, appState, projectName, logEntries, apiCallSummary, scenePlans, assets, guidanceFrames, mcpConfig]);
+  }, [shotBook, appState, projectName, logEntries, apiCallSummary, scenePlans, assets, guidanceFrames]);
 
   // VEO Polling
   useEffect(() => {
@@ -431,9 +448,10 @@ const App: React.FC = () => {
 
                  const imageData = await generateKeyframeImage(finalShots[i].keyframePromptText!, ingredients, finalShots[i].veoJson?.veo_shot?.scene?.aspect_ratio || "16:9");
                  finalShots[i].keyframeImage = imageData.result;
+                 finalShots[i].keyframeHistory = [imageData.result];
                  finalShots[i].status = ShotStatus.NEEDS_REVIEW;
                  updateApiSummary({input: 0, output: 0}, 'image');
-                 setShotBook((prev: ShotBook | null) => prev ? prev.map((s, idx) => idx === i ? { ...s, keyframeImage: imageData.result, status: ShotStatus.NEEDS_REVIEW } : s) : null);
+                 setShotBook((prev: ShotBook | null) => prev ? prev.map((s, idx) => idx === i ? { ...s, keyframeImage: imageData.result, keyframeHistory: [imageData.result], status: ShotStatus.NEEDS_REVIEW } : s) : null);
              } catch (e) {
                  finalShots[i].status = ShotStatus.GENERATION_FAILED;
                  setShotBook((prev: ShotBook | null) => prev ? prev.map((s, idx) => idx === i ? { ...s, status: ShotStatus.GENERATION_FAILED, errorMessage: (e as Error).message } : s) : null);
@@ -469,7 +487,13 @@ const App: React.FC = () => {
       const shotIndex = shotBook?.findIndex(s => s.id === shotId) ?? -1;
       if (shotIndex === -1 || !shotBook) return;
       const shot = shotBook[shotIndex];
-      const updateShotStatus = (status: ShotStatus, extra?: Partial<Shot>) => setShotBook(prev => prev ? prev.map((s, i) => i === shotIndex ? { ...s, status, ...extra } : s) : null);
+      const updateShotStatus = (status: ShotStatus, extra?: Partial<Shot>) => setShotBook(prev => prev ? prev.map((s, i) => {
+          if (i === shotIndex) {
+              const newHistory = extra?.keyframeImage ? [...(s.keyframeHistory || []), extra.keyframeImage] : s.keyframeHistory;
+              return { ...s, status, ...extra, keyframeHistory: newHistory };
+          }
+          return s;
+      }) : null);
       try {
           let promptText = shot.keyframePromptText;
           if (!promptText && shot.veoJson) {
@@ -526,7 +550,13 @@ const App: React.FC = () => {
 
           const imageData = await generateKeyframeImage(newPrompt, ingredients, newJson.veo_shot?.scene?.aspect_ratio || "16:9");
           updateApiSummary({input: 0, output: 0}, 'image');
-          setShotBook(prev => prev ? prev.map((s, i) => i === shotIndex ? { ...s, veoJson: newJson, keyframePromptText: newPrompt, keyframeImage: imageData.result, status: ShotStatus.NEEDS_REVIEW } : s) : null);
+          setShotBook(prev => prev ? prev.map((s, i) => {
+              if (i === shotIndex) {
+                  const newHistory = [...(s.keyframeHistory || []), imageData.result];
+                  return { ...s, veoJson: newJson, keyframePromptText: newPrompt, keyframeImage: imageData.result, keyframeHistory: newHistory, status: ShotStatus.NEEDS_REVIEW };
+              }
+              return s;
+          }) : null);
       } catch (e) { setShotBook(prev => prev ? prev.map((s, i) => i === shotIndex ? { ...s, status: ShotStatus.GENERATION_FAILED } : s) : null); }
   };
 
@@ -606,36 +636,95 @@ const App: React.FC = () => {
   const handleDownloadKeyframesZip = async () => {
       if (!JSZip || !shotBook) return;
       const zip = new JSZip();
-      const folder = zip.folder("keyframes");
+      
+      // Keyframes
+      const kfFolder = zip.folder("keyframes");
+      let kfCount = 0;
       shotBook.forEach(shot => {
-          if (shot.keyframeImage) {
-              folder.file(`${shot.id}.png`, shot.keyframeImage, { base64: true });
+          if (shot.keyframeHistory && shot.keyframeHistory.length > 0) {
+              shot.keyframeHistory.forEach((img, idx) => {
+                  kfFolder.file(`${shot.id}_v${idx + 1}.png`, img, { base64: true });
+                  kfCount++;
+              });
+          } else if (shot.keyframeImage) {
+              kfFolder.file(`${shot.id}.png`, shot.keyframeImage, { base64: true });
+              kfCount++;
           }
       });
+
+      // Assets
+      const assetFolder = zip.folder("assets");
+      let assetCount = 0;
+      assets.forEach(asset => {
+          if (asset.image) {
+              assetFolder.file(`${asset.name.replace(/\s+/g, '_')}_${asset.id}.png`, asset.image.base64, { base64: true });
+              assetCount++;
+          }
+      });
+
+      // Guidance
+      const guidanceFolder = zip.folder("guidance_frames");
+      let guidanceCount = 0;
+      guidanceFrames.forEach(gf => {
+          if (gf.image) {
+              guidanceFolder.file(`guidance_${gf.id}.png`, gf.image.base64, { base64: true });
+              guidanceCount++;
+          }
+      });
+
+      if (kfCount === 0 && assetCount === 0 && guidanceCount === 0) {
+          addLogEntry("No images found to download.", LogType.INFO);
+          return;
+      }
+
       const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${projectName || 'project'}_keyframes.zip`;
+      a.download = `${projectName || 'project'}_images.zip`;
       a.click();
+      addLogEntry(`Downloaded ${kfCount} keyframes, ${assetCount} assets, and ${guidanceCount} guidance frames.`, LogType.SUCCESS);
   };
   const handleExportPackage = async () => { 
       if (!JSZip || !shotBook) return; 
       const zip = new JSZip(); 
       const root = zip.folder(projectName || "project"); 
       root.file("shot_list.json", JSON.stringify(shotBook, null, 2)); 
-      const imgFolder = root.folder("keyframes");
+      root.file("assets.json", JSON.stringify(assets, null, 2));
+      root.file("guidance_frames.json", JSON.stringify(guidanceFrames, null, 2));
+
+      const kfFolder = root.folder("keyframes");
       shotBook.forEach(shot => {
-          if (shot.keyframeImage) {
-              imgFolder.file(`${shot.id}.png`, shot.keyframeImage, { base64: true });
+          if (shot.keyframeHistory && shot.keyframeHistory.length > 0) {
+              shot.keyframeHistory.forEach((img, idx) => {
+                  kfFolder.file(`${shot.id}_v${idx + 1}.png`, img, { base64: true });
+              });
+          } else if (shot.keyframeImage) {
+              kfFolder.file(`${shot.id}.png`, shot.keyframeImage, { base64: true });
           }
       });
+
+      const assetFolder = root.folder("assets");
+      assets.forEach(asset => {
+          if (asset.image) {
+              assetFolder.file(`${asset.name.replace(/\s+/g, '_')}_${asset.id}.png`, asset.image.base64, { base64: true });
+          }
+      });
+
+      const guidanceFolder = root.folder("guidance_frames");
+      guidanceFrames.forEach(gf => {
+          if (gf.image) {
+              guidanceFolder.file(`guidance_${gf.id}.png`, gf.image.base64, { base64: true });
+          }
+      });
+
       const content = await zip.generateAsync({type: "blob"}); 
       const url = URL.createObjectURL(content); 
       const a = document.createElement('a'); 
       a.href = url; 
       a.download = `${projectName || 'package'}.zip`; 
       a.click(); 
+      addLogEntry("Full project package exported successfully.", LogType.SUCCESS);
   };
 
   return (

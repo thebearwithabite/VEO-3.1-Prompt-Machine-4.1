@@ -28,14 +28,19 @@ const StorageInfoDialog: React.FC<StorageInfoDialogProps> = ({ isOpen, onClose }
         
         <div className="p-6 overflow-y-auto space-y-6 text-gray-300 leading-relaxed">
             <section>
-                <h4 className="text-white font-semibold mb-2 text-lg">Where are my keyframes stored?</h4>
+                <h4 className="text-white font-semibold mb-2 text-lg">Where are my images?</h4>
                 <p>
-                    While you are working, generated images are stored in your <strong>browser's temporary memory (RAM)</strong>. 
-                    To prevent your browser from crashing due to memory limits, images are <strong>NOT</strong> saved to automatic local history.
+                    All generated keyframes, uploaded assets, and guidance frames are stored in your <strong>browser's temporary memory (RAM)</strong>. 
+                    They are fully available for use and download as long as you keep this tab open.
                 </p>
-                <div className="mt-3 bg-yellow-900/30 border border-yellow-700/50 p-3 rounded-lg text-sm text-yellow-200 flex gap-2 items-start">
+                <div className="mt-3 bg-amber-900/30 border border-amber-700/50 p-3 rounded-lg text-sm text-amber-200 flex gap-2 items-start">
                      <span className="text-xl">⚠️</span>
-                     <p>If you refresh the page without saving, <strong>you will lose your generated images</strong> (though your script and shot list will remain).</p>
+                     <div>
+                        <p className="font-bold mb-1">Local Storage Limits</p>
+                        <p>Browsers limit "Local Storage" to about 5MB. High-resolution images quickly exceed this. 
+                        When your project gets large, we stop saving images to this persistent cache to prevent errors. 
+                        <strong>Your images are still in memory</strong>, but you should export a ZIP to save them permanently.</p>
+                     </div>
                 </div>
             </section>
 
