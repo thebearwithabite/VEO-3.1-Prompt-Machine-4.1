@@ -20,5 +20,5 @@
       "@/*": ["*"]
     }
   },
-  "include": ["src", "components", "services", "App.tsx", "index.tsx", "metadata.ts", "types.ts"]
+  "include": ["src", "components", "services", "App.tsx", "index.tsx", "metadata.ts", "types.ts", "vite-env.d.ts"]
 }

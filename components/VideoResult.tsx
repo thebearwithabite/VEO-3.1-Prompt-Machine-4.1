@@ -17,6 +17,12 @@ import {
   VeoStatus,
   McpServerConfig,
   GuidanceFrame,
+  GEMINI_PRO_INPUT_COST_PER_MILLION_TOKENS,
+  GEMINI_PRO_OUTPUT_COST_PER_MILLION_TOKENS,
+  GEMINI_FLASH_INPUT_COST_PER_MILLION_TOKENS,
+  GEMINI_FLASH_OUTPUT_COST_PER_MILLION_TOKENS,
+  IMAGEN_COST_PER_IMAGE,
+  VEO_COST_PER_SECOND,
 } from '../types';
 import ActivityLog from './ActivityLog';
 import {
@@ -28,6 +34,8 @@ import {
   DownloadIcon,
   FileArchiveIcon,
   FileJsonIcon,
+  LogInIcon,
+  LogOutIcon,
   FilePenLineIcon,
   FileTextIcon,
   FilmIcon,
@@ -398,6 +406,9 @@ interface ShotBookDisplayProps {
   onExportAllJsons: () => void;
   onExportHtmlReport: () => void;
   onDownloadKeyframesZip: () => void;
+  user: any;
+  onLogin: () => void;
+  onLogout: () => void;
 }
 
 const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
@@ -431,6 +442,9 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
   onToggleGuidanceForShot,
   onGenerateAllKeyframes,
   onDownloadKeyframesZip,
+  user,
+  onLogin,
+  onLogout,
 }) => {
   const [showSettings, setShowSettings] = useState(false);
   const mediaInputRef = useRef<HTMLInputElement>(null);
@@ -457,11 +471,40 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
             <span className="px-2 py-0.5 bg-indigo-900/50 text-indigo-400 text-[10px] font-bold rounded uppercase border border-indigo-700">Production Mode</span>
             <div className="mt-1 flex items-center gap-2">
                 <span className="text-[10px] text-gray-500 font-mono">EST. COST:</span>
-                <span className="text-[10px] text-green-400 font-mono font-bold">${((apiCallSummary.proTokens.input / 1000000) * 7 + (apiCallSummary.proTokens.output / 1000000) * 21 + (apiCallSummary.flashTokens.input / 1000000) * 0.35 + (apiCallSummary.flashTokens.output / 1000000) * 1.05 + apiCallSummary.image * 0.005).toFixed(4)}</span>
+                <span className="text-[10px] text-green-400 font-mono font-bold">
+                    ${(
+                        (apiCallSummary.proTokens.input / 1000000) * GEMINI_PRO_INPUT_COST_PER_MILLION_TOKENS + 
+                        (apiCallSummary.proTokens.output / 1000000) * GEMINI_PRO_OUTPUT_COST_PER_MILLION_TOKENS + 
+                        (apiCallSummary.flashTokens.input / 1000000) * GEMINI_FLASH_INPUT_COST_PER_MILLION_TOKENS + 
+                        (apiCallSummary.flashTokens.output / 1000000) * GEMINI_FLASH_OUTPUT_COST_PER_MILLION_TOKENS + 
+                        apiCallSummary.image * IMAGEN_COST_PER_IMAGE +
+                        (apiCallSummary.veoSeconds || 0) * VEO_COST_PER_SECOND
+                    ).toFixed(4)}
+                </span>
             </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-3 justify-center items-center">
+          {user ? (
+            <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5">
+              {user.photoURL ? (
+                <img src={user.photoURL} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
+                  {user.displayName?.[0] || user.email?.[0] || 'U'}
+                </div>
+              )}
+              <span className="text-xs text-gray-300 font-medium hidden sm:inline">{user.displayName || user.email?.split('@')[0]}</span>
+              <button onClick={onLogout} className="ml-1 p-1 text-gray-400 hover:text-red-400 transition-colors" title="Sign Out">
+                <LogOutIcon className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button onClick={onLogin} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-indigo-500/20">
+              <LogInIcon className="w-4 h-4" />
+              Sign In with Google
+            </button>
+          )}
           <div className="relative">
               <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded-lg border transition-all ${showSettings ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-500'}`}>
                   <SettingsIcon className="w-5 h-5" />

@@ -43,6 +43,8 @@ import {
   Video, // New
   Settings, // New
   FastForward, // New
+  LogIn,
+  LogOut,
 } from 'lucide-react';
 
 const defaultProps = {
@@ -203,6 +205,14 @@ export const SettingsIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => 
 
 export const FastForwardIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <FastForward {...defaultProps} {...props} />
+);
+
+export const LogInIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <LogIn {...defaultProps} {...props} />
+);
+
+export const LogOutIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <LogOut {...defaultProps} {...props} />
 );
 
 // This icon had a different stroke width in the original file, so we preserve it.

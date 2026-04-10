@@ -30,16 +30,16 @@ const StorageInfoDialog: React.FC<StorageInfoDialogProps> = ({ isOpen, onClose }
             <section>
                 <h4 className="text-white font-semibold mb-2 text-lg">Where are my images?</h4>
                 <p>
-                    All generated keyframes, uploaded assets, and guidance frames are stored in your <strong>browser's temporary memory (RAM)</strong>. 
-                    They are fully available for use and download as long as you keep this tab open.
+                    All generated keyframes, uploaded assets, and guidance frames are stored in <strong>Firebase Cloud Storage</strong>. 
+                    They are automatically synced to your account when you are signed in with Google.
                 </p>
-                <div className="mt-3 bg-amber-900/30 border border-amber-700/50 p-3 rounded-lg text-sm text-amber-200 flex gap-2 items-start">
-                     <span className="text-xl">⚠️</span>
+                <div className="mt-3 bg-indigo-900/30 border border-indigo-700/50 p-3 rounded-lg text-sm text-indigo-200 flex gap-2 items-start">
+                     <span className="text-xl">☁️</span>
                      <div>
-                        <p className="font-bold mb-1">Local Storage Limits</p>
-                        <p>Browsers limit "Local Storage" to about 5MB. High-resolution images quickly exceed this. 
-                        When your project gets large, we stop saving images to this persistent cache to prevent errors. 
-                        <strong>Your images are still in memory</strong>, but you should export a ZIP to save them permanently.</p>
+                        <p className="font-bold mb-1">Cloud Persistence</p>
+                        <p>Your project state is saved to Firestore and images are stored in a secure bucket. 
+                        This means you can refresh the page or switch devices and your work will be waiting for you. 
+                        <strong>Make sure you are signed in</strong> to enable auto-sync.</p>
                      </div>
                 </div>
             </section>

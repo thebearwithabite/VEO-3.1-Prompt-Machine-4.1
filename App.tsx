@@ -56,6 +56,7 @@ import {
   GEMINI_FLASH_INPUT_COST_PER_MILLION_TOKENS,
   GEMINI_FLASH_OUTPUT_COST_PER_MILLION_TOKENS,
   IMAGEN_COST_PER_IMAGE,
+  VEO_COST_PER_SECOND,
 } from './types';
 import { metadata } from './metadata';
 import { auth, db, storage } from './firebase';
@@ -66,14 +67,23 @@ import {
   collection, 
   onSnapshot,
   query,
-  where
+  where,
+  getDocFromServer,
+  getDocs,
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { 
   ref, 
   uploadString, 
   getDownloadURL 
 } from 'firebase/storage';
-import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { 
+  onAuthStateChanged, 
+  signInWithPopup, 
+  GoogleAuthProvider,
+  signOut 
+} from 'firebase/auth';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const API_CALL_DELAY_MS = 1200;
@@ -89,6 +99,57 @@ const fileToBase64 = (file: File): Promise<string> =>
     reader.onload = () => resolve((reader.result as string).split(',')[1]);
     reader.onerror = (error) => reject(error);
   });
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
@@ -117,7 +178,7 @@ const App: React.FC = () => {
   const [lastPrompt, setLastPrompt] = useState<{script: string; createKeyframes: boolean;} | null>(null);
   const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
   const [apiCallSummary, setApiCallSummary] = useState<ApiCallSummary>({
-    pro: 0, flash: 0, image: 0, proTokens: {input: 0, output: 0}, flashTokens: {input: 0, output: 0}
+    pro: 0, flash: 0, image: 0, veo: 0, veoSeconds: 0, proTokens: {input: 0, output: 0}, flashTokens: {input: 0, output: 0}
   });
   const hasWarnedLargeProject = useRef(false);
   const [currentThoughts, setCurrentThoughts] = useState<string | null>(null);
@@ -125,19 +186,88 @@ const App: React.FC = () => {
 
   // Firebase Auth
   useEffect(() => {
-    onAuthStateChanged(auth, (u) => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
       if (u) {
-        setUser(u);
-      } else {
-        signInAnonymously(auth).catch(console.error);
+        // Try to load the most recent project for this user
+        loadLastProjectForUser(u.uid);
       }
     });
+
+    // Connection test
+    const testConnection = async () => {
+      try {
+        await getDocFromServer(doc(db, 'test', 'connection'));
+      } catch (error) {
+        if(error instanceof Error && error.message.includes('the client is offline')) {
+          console.error("Please check your Firebase configuration. ");
+        }
+      }
+    };
+    testConnection();
+
+    return () => unsubscribe();
   }, []);
+
+  const handleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      addLogEntry('Signed in successfully.', LogType.SUCCESS);
+    } catch (e) {
+      console.error('Login error:', e);
+      addLogEntry('Failed to sign in. Please check your browser settings.', LogType.ERROR);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      addLogEntry('Signed out.', LogType.INFO);
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+  };
 
   const uploadImageToStorage = async (base64: string, path: string) => {
     const storageRef = ref(storage, path);
     await uploadString(storageRef, base64, 'base64');
     return await getDownloadURL(storageRef);
+  };
+
+  const loadLastProjectForUser = async (uid: string) => {
+    try {
+      const q = query(
+        collection(db, 'projects'),
+        where('userId', '==', uid),
+        orderBy('updatedAt', 'desc'),
+        limit(1)
+      );
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const projectDoc = querySnapshot.docs[0];
+        const data = projectDoc.data();
+        
+        // Load shots
+        const shotsCol = collection(db, 'projects', projectDoc.id, 'shots');
+        const shotsSnapshot = await getDocs(shotsCol);
+        const shots = shotsSnapshot.docs.map(d => d.data() as Shot);
+        
+        setProjectName(data.projectName);
+        setShotBook(shots);
+        setAssets(data.assets || []);
+        setGuidanceFrames(data.guidanceFrames || []);
+        setLogEntries(data.logEntries || []);
+        setApiCallSummary(data.apiCallSummary || {
+          pro: 0, flash: 0, image: 0, veo: 0, proTokens: {input: 0, output: 0}, flashTokens: {input: 0, output: 0}
+        });
+        setScenePlans(data.scenePlans || []);
+        setAppState(AppState.SUCCESS);
+        addLogEntry(`Restored project: ${data.projectName}`, LogType.SUCCESS);
+      }
+    } catch (e) {
+      console.error('Error loading last project:', e);
+    }
   };
 
   const saveProjectToFirebase = async (force: boolean = false) => {
@@ -200,19 +330,29 @@ const App: React.FC = () => {
         guidanceFrames: updatedGuidance
       };
 
-      await setDoc(projectRef, stateToSave, { merge: true });
+      try {
+        await setDoc(projectRef, stateToSave, { merge: true });
+      } catch (e) {
+        handleFirestoreError(e, OperationType.WRITE, `projects/${projectName}`);
+      }
       
       if (updatedShotBook) {
         const shotsCol = collection(projectRef, 'shots');
         for (const shot of updatedShotBook) {
-          await setDoc(doc(shotsCol, shot.id), shot, { merge: true });
+          try {
+            await setDoc(doc(shotsCol, shot.id), shot, { merge: true });
+          } catch (e) {
+            handleFirestoreError(e, OperationType.WRITE, `projects/${projectName}/shots/${shot.id}`);
+          }
         }
       }
 
       addLogEntry('Project synced to cloud storage.', LogType.SUCCESS);
     } catch (e) {
       console.error('Firebase save error:', e);
-      addLogEntry('Failed to sync to cloud.', LogType.ERROR);
+      if (e instanceof Error && !e.message.startsWith('{')) {
+        addLogEntry('Failed to sync to cloud.', LogType.ERROR);
+      }
     }
   };
 
@@ -230,7 +370,8 @@ const App: React.FC = () => {
     const flashInputCost = (apiCallSummary.flashTokens.input / 1000000) * GEMINI_FLASH_INPUT_COST_PER_MILLION_TOKENS;
     const flashOutputCost = (apiCallSummary.flashTokens.output / 1000000) * GEMINI_FLASH_OUTPUT_COST_PER_MILLION_TOKENS;
     const imageCost = apiCallSummary.image * IMAGEN_COST_PER_IMAGE;
-    return (proInputCost + proOutputCost + flashInputCost + flashOutputCost + imageCost).toFixed(4);
+    const veoCost = (apiCallSummary.veoSeconds || 0) * VEO_COST_PER_SECOND;
+    return (proInputCost + proOutputCost + flashInputCost + flashOutputCost + imageCost + veoCost).toFixed(4);
   };
 
   // Load from Local Storage
@@ -347,10 +488,11 @@ const App: React.FC = () => {
     setLogEntries((prev) => [...prev, {timestamp: new Date().toLocaleTimeString(), message, type}]);
   };
 
-  const updateApiSummary = (tokens: {input: number; output: number}, model: 'pro' | 'flash' | 'image') => {
+  const updateApiSummary = (tokens: {input: number; output: number}, model: 'pro' | 'flash' | 'image' | 'veo', seconds: number = 0) => {
     setApiCallSummary((prev) => ({
       ...prev,
       [model]: prev[model] + 1,
+      veoSeconds: model === 'veo' ? prev.veoSeconds + seconds : prev.veoSeconds,
       proTokens: model === 'pro' ? { input: prev.proTokens.input + tokens.input, output: prev.proTokens.output + tokens.output } : prev.proTokens,
       flashTokens: model === 'flash' ? { input: prev.flashTokens.input + tokens.input, output: prev.flashTokens.output + tokens.output } : prev.flashTokens,
     }));
@@ -454,6 +596,17 @@ const App: React.FC = () => {
 
   const handleAddAsset = (asset: ProjectAsset) => {
       setAssets(prev => [...prev, asset]);
+      if (asset.image) {
+          const newGuidance: GuidanceFrame = {
+              id: asset.id,
+              name: asset.name,
+              image: asset.image
+          };
+          setGuidanceFrames(prev => {
+              if (prev.some(f => f.id === asset.id)) return prev;
+              return [...prev, newGuidance];
+          });
+      }
       addLogEntry(`Added asset: ${asset.name}`, LogType.INFO);
   };
 
@@ -464,6 +617,7 @@ const App: React.FC = () => {
           const base64 = await fileToBase64(file);
           const mimeType = file.type;
           setAssets(prev => prev.map(a => a.id === id ? { ...a, image: { base64, mimeType } } : a));
+          setGuidanceFrames(prev => prev.map(f => f.id === id ? { ...f, image: { base64, mimeType } } : f));
           addLogEntry("Updated asset image.", LogType.SUCCESS);
       } catch (e) { addLogEntry("Failed to process image.", LogType.ERROR); }
   };
@@ -489,7 +643,7 @@ const App: React.FC = () => {
     setErrorMessage(null);
     setLogEntries([]);
     setShotBook([]);
-    setApiCallSummary({pro: 0, flash: 0, image: 0, proTokens: {input: 0, output: 0}, flashTokens: {input: 0, output: 0}});
+    setApiCallSummary({pro: 0, flash: 0, image: 0, veo: 0, veoSeconds: 0, proTokens: {input: 0, output: 0}, flashTokens: {input: 0, output: 0}});
     setLastPrompt({script: scriptInput, createKeyframes});
 
     try {
@@ -523,6 +677,7 @@ const App: React.FC = () => {
          return { ...shot, sceneName: sceneNameMap.get(sceneId) || sceneId };
       });
       setShotBook(shotsWithScenes);
+      saveProjectToFirebase(true); // Save initial shot list
 
       const sceneGroups = new Map<string, Shot[]>();
       shotsWithScenes.forEach(shot => {
@@ -618,6 +773,7 @@ const App: React.FC = () => {
       await Promise.all(shotPromises);
       addLogEntry('Generation completed!', LogType.SUCCESS);
       setAppState(AppState.SUCCESS);
+      saveProjectToFirebase(true); // Final save
     } catch (e) {
       setErrorMessage((e as Error).message || 'Error occurred.');
       setAppState(AppState.ERROR);
@@ -720,8 +876,9 @@ const App: React.FC = () => {
       if (shotIndex === -1 || !shotBook) return;
       const shot = shotBook[shotIndex];
       
-      // Calculate cost: $0.10 for Veo 3.1 Lite
-      const cost = 0.10;
+      // Calculate cost: $0.08 per second for Veo 3.1 Lite
+      const duration = shot.veoJson?.veo_shot?.scene?.duration_s || 5;
+      const cost = duration * VEO_COST_PER_SECOND;
       setShowVeoApproval({ shotId, cost });
   };
 
@@ -748,6 +905,8 @@ const App: React.FC = () => {
               imageBytes: shot.keyframeImage || undefined,
               mimeType: 'image/png'
           });
+          const duration = shot.veoJson?.veo_shot?.scene?.duration_s || 5;
+          updateApiSummary({input: 0, output: 0}, 'veo', duration);
           setShotBook(prev => prev ? prev.map((s, i) => i === shotIndex ? { ...s, veoStatus: VeoStatus.GENERATING, veoOperation: operation } : s) : null);
           addLogEntry(`Veo 3.1 Lite generation started for ${shotId}`, LogType.INFO);
       } catch (e) { 
@@ -793,14 +952,22 @@ const App: React.FC = () => {
       const zip = new JSZip();
       
       const fetchImageAsBase64 = async (url: string) => {
-          if (!url.startsWith('http')) return url;
-          const response = await fetch(url);
-          const blob = await response.blob();
-          return new Promise<string>((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-              reader.readAsDataURL(blob);
-          });
+          if (!url) return null;
+          if (url.startsWith('data:')) {
+              return url.split(',')[1];
+          }
+          try {
+              const response = await fetch(url);
+              const blob = await response.blob();
+              return new Promise<string>((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+                  reader.readAsDataURL(blob);
+              });
+          } catch (e) {
+              console.error('Error fetching image for ZIP:', e);
+              return null;
+          }
       };
 
       // Keyframes
@@ -811,13 +978,17 @@ const App: React.FC = () => {
               for (let idx = 0; idx < shot.keyframeHistory.length; idx++) {
                   const img = shot.keyframeHistory[idx];
                   const b64 = await fetchImageAsBase64(img);
-                  kfFolder.file(`${shot.id}_v${idx + 1}.png`, b64, { base64: true });
-                  kfCount++;
+                  if (b64) {
+                      kfFolder?.file(`${shot.id}_v${idx + 1}.png`, b64, { base64: true });
+                      kfCount++;
+                  }
               }
           } else if (shot.keyframeImage) {
               const b64 = await fetchImageAsBase64(shot.keyframeImage);
-              kfFolder.file(`${shot.id}.png`, b64, { base64: true });
-              kfCount++;
+              if (b64) {
+                  kfFolder?.file(`${shot.id}.png`, b64, { base64: true });
+                  kfCount++;
+              }
           }
       }
 
@@ -827,8 +998,10 @@ const App: React.FC = () => {
       for (const asset of assets) {
           if (asset.image) {
               const b64 = await fetchImageAsBase64(asset.image.base64);
-              assetFolder.file(`${asset.name.replace(/\s+/g, '_')}_${asset.id}.png`, b64, { base64: true });
-              assetCount++;
+              if (b64) {
+                  assetFolder?.file(`${asset.name.replace(/\s+/g, '_')}_${asset.id}.png`, b64, { base64: true });
+                  assetCount++;
+              }
           }
       }
 
@@ -838,8 +1011,10 @@ const App: React.FC = () => {
       for (const gf of guidanceFrames) {
           if (gf.image) {
               const b64 = await fetchImageAsBase64(gf.image.base64);
-              guidanceFolder.file(`guidance_${gf.id}.png`, b64, { base64: true });
-              guidanceCount++;
+              if (b64) {
+                  guidanceFolder?.file(`guidance_${gf.id}.png`, b64, { base64: true });
+                  guidanceCount++;
+              }
           }
       }
 
@@ -952,7 +1127,7 @@ const App: React.FC = () => {
           onConfirm={confirmGenerateVeoVideo} 
           onCancel={() => setShowVeoApproval(null)} 
       />
-      <ConfirmDialog isOpen={showResetDialog} title="Reset Application?" message="This will clear ALL data including assets and guidance frames. This cannot be undone." onConfirm={() => { setShotBook(null); setProjectName(null); setLogEntries([]); setAppState(AppState.IDLE); setAssets([]); setGuidanceFrames([]); setApiCallSummary({ pro: 0, flash: 0, image: 0, proTokens: {input: 0, output: 0}, flashTokens: {input: 0, output: 0} }); localStorage.removeItem(LOCAL_STORAGE_KEY); setShowResetDialog(false); }} onCancel={() => setShowResetDialog(false)} />
+      <ConfirmDialog isOpen={showResetDialog} title="Reset Application?" message="This will clear ALL data including assets and guidance frames. This cannot be undone." onConfirm={() => { setShotBook(null); setProjectName(null); setLogEntries([]); setAppState(AppState.IDLE); setAssets([]); setGuidanceFrames([]); setApiCallSummary({ pro: 0, flash: 0, image: 0, veo: 0, veoSeconds: 0, proTokens: {input: 0, output: 0}, flashTokens: {input: 0, output: 0} }); localStorage.removeItem(LOCAL_STORAGE_KEY); setShowResetDialog(false); }} onCancel={() => setShowResetDialog(false)} />
       <StorageInfoDialog isOpen={showStorageInfoDialog} onClose={() => setShowStorageInfoDialog(false)} />
       <main className="flex flex-col items-center p-4 md:p-8 min-h-screen max-w-[1920px] mx-auto">
         {appState === AppState.IDLE && (
@@ -1007,6 +1182,9 @@ const App: React.FC = () => {
             onRemoveGuidanceFrame={handleRemoveGuidanceFrame} 
             onToggleGuidanceForShot={handleToggleGuidanceForShot} 
             onGenerateAllKeyframes={handleGenerateAllKeyframes} 
+            user={user}
+            onLogin={handleLogin}
+            onLogout={handleLogout}
           />
         )}
         <footer className="mt-auto py-6 text-center text-gray-600 text-sm"><p>Powered by Google Gemini & Veo 3.1 • DaVinci Resolve Integration via MCP</p></footer>

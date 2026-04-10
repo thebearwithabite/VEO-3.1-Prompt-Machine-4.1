@@ -161,6 +161,8 @@ export interface ApiCallSummary {
   pro: number;
   flash: number;
   image: number;
+  veo: number;
+  veoSeconds: number;
   proTokens: { input: number; output: number; };
   flashTokens: { input: number; output: number; };
 }
@@ -178,8 +180,9 @@ export interface McpServerConfig {
   tools: McpTool[];
 }
 
-export const GEMINI_PRO_INPUT_COST_PER_MILLION_TOKENS = 7.00;
-export const GEMINI_PRO_OUTPUT_COST_PER_MILLION_TOKENS = 21.00;
-export const GEMINI_FLASH_INPUT_COST_PER_MILLION_TOKENS = 0.35;
-export const GEMINI_FLASH_OUTPUT_COST_PER_MILLION_TOKENS = 1.05;
-export const IMAGEN_COST_PER_IMAGE = 0.005;
+export const GEMINI_PRO_INPUT_COST_PER_MILLION_TOKENS = 3.50;
+export const GEMINI_PRO_OUTPUT_COST_PER_MILLION_TOKENS = 10.50;
+export const GEMINI_FLASH_INPUT_COST_PER_MILLION_TOKENS = 0.075;
+export const GEMINI_FLASH_OUTPUT_COST_PER_MILLION_TOKENS = 0.30;
+export const IMAGEN_COST_PER_IMAGE = 0.03;
+export const VEO_COST_PER_SECOND = 0.08;

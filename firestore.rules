@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: projects
+    // Fields:
+    //   - projectName: string (required)
+    //   - userId: string (required) - Owner of the project
+    //   - updatedAt: string (required)
+    //   - logEntries: array
+    //   - apiCallSummary: map
+    //   - scenePlans: array
+    //   - lastPrompt: map
+    //   - assets: array
+    //   - guidanceFrames: array
+    //
+    // Collection: projects/{projectId}/shots
+    // Fields:
+    //   - id: string (required)
+    //   - status: string (required)
+    //   - keyframeImage: string
+    //   - keyframeHistory: list
+    //   ... other shot fields
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "thebearwithabite@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isProjectOwner(projectId) {
+      return isAuthenticated() && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+    }
+
+    function isValidProject(data) {
+      return data.projectName is string && data.projectName.size() > 0 && data.projectName.size() < 200 &&
+             data.userId == request.auth.uid &&
+             data.updatedAt is string;
+    }
+
+    function isValidShot(data) {
+      return data.id is string && data.status is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /projects/{projectId} {
+      allow read: if isProjectOwner(projectId) || isAdmin();
+      allow create: if isAuthenticated() && isValidProject(request.resource.data);
+      allow update: if isProjectOwner(projectId) && isValidProject(request.resource.data) || isAdmin();
+      allow delete: if isProjectOwner(projectId) || isAdmin();
+
+      match /shots/{shotId} {
+        allow read: if isProjectOwner(projectId) || isAdmin();
+        allow create: if isAuthenticated() && isValidShot(request.resource.data);
+        allow update: if isProjectOwner(projectId) && isValidShot(request.resource.data) || isAdmin();
+        allow delete: if isProjectOwner(projectId) || isAdmin();
+      }
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+  }
+}
