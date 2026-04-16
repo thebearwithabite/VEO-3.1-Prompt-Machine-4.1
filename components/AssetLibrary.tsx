@@ -244,6 +244,7 @@ const AssetCard: React.FC<{
       <button
         onClick={onRemove}
         type="button"
+        aria-label="Remove asset"
         className="absolute top-1 right-1 z-10 bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <XMarkIcon className="w-3 h-3" />
       </button>
@@ -294,6 +295,7 @@ const AssetCard: React.FC<{
              <button
                 type="button"
                 onClick={handleCopyDescription}
+                aria-label="Copy Name and Description"
                 className="text-gray-500 hover:text-white transition-colors flex-shrink-0"
                 title="Copy Name & Description">
                 {copied ? <CheckCircle2Icon className="w-3 h-3 text-green-400" /> : <ClipboardDocumentIcon className="w-3 h-3" />}

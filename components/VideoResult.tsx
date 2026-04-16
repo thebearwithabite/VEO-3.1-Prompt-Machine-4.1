@@ -139,6 +139,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
                     {shot.keyframeHistory && shot.keyframeHistory.length > 1 && (
                         <button 
                             onClick={() => setShowHistory(true)}
+                            aria-label="View History"
                             className="p-1.5 bg-black/60 text-white rounded hover:bg-indigo-600 transition-colors"
                             title="View History"
                         >
@@ -267,6 +268,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
               <code>{shot.veoJson ? JSON.stringify(shot.veoJson, null, 2) : 'Awaiting generation...'}</code>
               <button 
                 onClick={() => navigator.clipboard.writeText(JSON.stringify(shot.veoJson, null, 2))}
+                aria-label="Copy JSON"
                 className="absolute top-2 right-2 p-1.5 bg-gray-800 text-gray-400 rounded opacity-0 group-hover:opacity-100 transition-opacity"
               >
                   <ClipboardDocumentIcon className="w-4 h-4" />
@@ -297,6 +299,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
                           </div>
                           <button 
                               onClick={() => setShowHistory(false)}
+                              aria-label="Close history"
                               className="p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
                           >
                               <XMarkIcon className="w-6 h-6" />
@@ -495,7 +498,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
                 </div>
               )}
               <span className="text-xs text-gray-300 font-medium hidden sm:inline">{user.displayName || user.email?.split('@')[0]}</span>
-              <button onClick={onLogout} className="ml-1 p-1 text-gray-400 hover:text-red-400 transition-colors" title="Sign Out">
+              <button onClick={onLogout} aria-label="Sign Out" className="ml-1 p-1 text-gray-400 hover:text-red-400 transition-colors" title="Sign Out">
                 <LogOutIcon className="w-4 h-4" />
               </button>
             </div>
@@ -506,7 +509,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
             </button>
           )}
           <div className="relative">
-              <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded-lg border transition-all ${showSettings ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-500'}`}>
+              <button onClick={() => setShowSettings(!showSettings)} aria-label="Settings" className={`p-2 rounded-lg border transition-all ${showSettings ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-500'}`}>
                   <SettingsIcon className="w-5 h-5" />
               </button>
               {showSettings && (
@@ -574,7 +577,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
               Download All Images
           </button>
           <button onClick={onExportPackage} className="px-4 py-2 bg-green-700 hover:bg-green-600 text-white font-semibold rounded-lg text-sm border border-green-500">Export ZIP Package</button>
-          <button onClick={onShowStorageInfo} className="p-2 bg-gray-800 border border-gray-600 text-gray-400 hover:text-white rounded-lg transition-all" title="Storage Info">
+          <button onClick={onShowStorageInfo} aria-label="Storage Info" className="p-2 bg-gray-800 border border-gray-600 text-gray-400 hover:text-white rounded-lg transition-all" title="Storage Info">
               <InfoIcon className="w-5 h-5" />
           </button>
         </div>
@@ -592,6 +595,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
                     </h3>
                     <button 
                         onClick={() => mediaInputRef.current?.click()}
+                        aria-label="Add Reference Media"
                         className="p-1 hover:bg-gray-700 rounded text-indigo-400 transition-colors"
                         title="Add Reference Media"
                     >
@@ -609,6 +613,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
                             />
                             <button 
                                 onClick={() => onRemoveGuidanceFrame(f.id)}
+                                aria-label="Remove guidance frame"
                                 className="absolute top-1 right-1 p-0.5 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                                 <XMarkIcon className="w-3 h-3" />
