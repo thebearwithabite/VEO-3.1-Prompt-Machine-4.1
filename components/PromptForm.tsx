@@ -318,8 +318,17 @@ const ProjectSetupForm: React.FC<ProjectSetupFormProps> = ({
             type="submit"
             disabled={isSubmitDisabled}
             className="flex items-center justify-center gap-3 px-8 py-4 bg-indigo-600 text-white font-bold text-lg rounded-xl hover:bg-indigo-700 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed w-full md:w-auto">
-            <span>Generate Shot Book</span>
-            <ArrowRightIcon className="w-5 h-5" />
+            {isGenerating ? (
+              <>
+                <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <span>Generate Shot Book</span>
+                <ArrowRightIcon className="w-5 h-5" />
+              </>
+            )}
           </button>
         </div>
       </form>
