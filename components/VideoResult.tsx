@@ -161,8 +161,9 @@ const ShotCard: React.FC<ShotCardProps> = ({
                             a.download = `${shot.id}_keyframe.png`;
                             a.click();
                         }}
-                        className="p-1.5 bg-black/60 text-white rounded hover:bg-indigo-600 transition-colors"
+                        className="p-1.5 bg-black/60 text-white rounded hover:bg-indigo-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:opacity-100"
                         title="Download Keyframe"
+                        aria-label="Download Keyframe"
                     >
                         <DownloadIcon className="w-4 h-4" />
                     </button>
@@ -347,8 +348,9 @@ const ShotCard: React.FC<ShotCardProps> = ({
                                               a.download = `${shot.id}_v${idx + 1}.png`;
                                               a.click();
                                           }}
-                                          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white/70 hover:text-white hover:bg-indigo-600 transition-all opacity-0 group-hover:opacity-100"
+                                          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white/70 hover:text-white hover:bg-indigo-600 transition-all opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
                                           title="Download this version"
+                                          aria-label="Download this version"
                                       >
                                           <DownloadIcon className="w-4 h-4" />
                                       </button>
