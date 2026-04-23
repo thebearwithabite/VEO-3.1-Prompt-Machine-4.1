@@ -161,8 +161,9 @@ const ShotCard: React.FC<ShotCardProps> = ({
                             a.download = `${shot.id}_keyframe.png`;
                             a.click();
                         }}
-                        className="p-1.5 bg-black/60 text-white rounded hover:bg-indigo-600 transition-colors"
+                        className="p-1.5 bg-black/60 text-white rounded hover:bg-indigo-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:opacity-100"
                         title="Download Keyframe"
+                        aria-label="Download Keyframe"
                     >
                         <DownloadIcon className="w-4 h-4" />
                     </button>
@@ -176,6 +177,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
                   key={idx}
                   onClick={() => onUpdateShot({...shot, keyframeImage: img})}
                   className={`w-2 h-2 rounded-full transition-all ${shot.keyframeImage === img ? 'bg-indigo-500 scale-125' : 'bg-gray-600 hover:bg-gray-500'}`}
+                  aria-label={`Set active keyframe to version ${idx + 1}`}
                   title={`Version ${idx + 1}`}
                 />
               ))}
@@ -191,6 +193,8 @@ const ShotCard: React.FC<ShotCardProps> = ({
               <button 
                 onClick={() => setShowGuidancePicker(!showGuidancePicker)}
                 className="w-full py-1.5 px-3 bg-gray-900 border border-gray-700 rounded-lg text-xs text-gray-400 hover:text-white flex justify-between items-center transition-colors"
+                aria-label="Toggle Guidance Frames Panel"
+                aria-expanded={showGuidancePicker}
               >
                   <span className="flex items-center gap-2">
                       <FramesModeIcon className="w-3 h-3 text-indigo-400" />
@@ -347,8 +351,9 @@ const ShotCard: React.FC<ShotCardProps> = ({
                                               a.download = `${shot.id}_v${idx + 1}.png`;
                                               a.click();
                                           }}
-                                          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white/70 hover:text-white hover:bg-indigo-600 transition-all opacity-0 group-hover:opacity-100"
+                                          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white/70 hover:text-white hover:bg-indigo-600 transition-all opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
                                           title="Download this version"
+                                          aria-label="Download this version"
                                       >
                                           <DownloadIcon className="w-4 h-4" />
                                       </button>
@@ -509,7 +514,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
             </button>
           )}
           <div className="relative">
-              <button onClick={() => setShowSettings(!showSettings)} aria-label="Settings" className={`p-2 rounded-lg border transition-all ${showSettings ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-500'}`}>
+              <button onClick={() => setShowSettings(!showSettings)} aria-label="Settings" title="Settings" aria-expanded={showSettings} className={`p-2 rounded-lg border transition-all ${showSettings ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-500'}`}>
                   <SettingsIcon className="w-5 h-5" />
               </button>
               {showSettings && (
