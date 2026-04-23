@@ -21,7 +21,11 @@ const StorageInfoDialog: React.FC<StorageInfoDialogProps> = ({ isOpen, onClose }
                 <InfoIcon className="w-6 h-6 text-indigo-400" />
                 Storage & Sharing Guide
             </h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+            <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded"
+                aria-label="Close dialog"
+            >
                 <XMarkIcon className="w-6 h-6" />
             </button>
         </div>
