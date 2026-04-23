@@ -1,3 +1,6 @@
+node_modules
+dist
+.env
 migrated_prompt_history
 GIT_*
 node_modules
