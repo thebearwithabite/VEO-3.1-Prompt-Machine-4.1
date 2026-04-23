@@ -214,11 +214,15 @@ const ShotCard: React.FC<ShotCardProps> = ({
                                 <button 
                                     key={f.id}
                                     onClick={() => onToggleGuidanceForShot(shot.id, f.id)}
-                                    className={`aspect-square rounded border-2 overflow-hidden transition-all ${selectedGuidanceIds.includes(f.id) ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                                    className={`aspect-square rounded border-2 overflow-hidden transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${selectedGuidanceIds.includes(f.id) ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                                    aria-label={`Toggle guidance frame: ${f.name}`}
+                                    aria-pressed={selectedGuidanceIds.includes(f.id)}
+                                    title={f.name}
                                 >
                                     <img 
                                         src={f.image.base64.startsWith('http') ? f.image.base64 : `data:image/png;base64,${f.image.base64}`} 
                                         className="w-full h-full object-cover" 
+                                        alt={f.name}
                                     />
                                 </button>
                             ))}
