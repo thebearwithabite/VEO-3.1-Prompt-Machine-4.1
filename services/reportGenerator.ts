@@ -14,6 +14,18 @@ import {
 } from '../types';
 
 /**
+ * Escapes HTML special characters in a string.
+ */
+const escapeHtml = (unsafe: string): string => {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+/**
  * Calculates the estimated total API cost based on the summary of calls and token usage.
  * Pricing is based on estimated costs per million tokens and per image.
  */
@@ -89,7 +101,10 @@ const transformShotBookForReport = (shotBook: ShotBook) => {
       target_api: 'veo3',
       duration_seconds: veoJson.scene.duration_s,
       keyframe_image_b64: shot.keyframeImage || null,
-      veo3_json: veoJson,
+      veo3_json: {
+        ...veoJson,
+        unit_type: shot.veoJson?.unit_type || 'shot'
+      },
       director_notes: directorNotes, // Include director_notes
       audio_specs: audioSpecs || 'no audio',
     };
@@ -124,13 +139,16 @@ export const generateMasterShotlistHtml = (
 
   const masterShotlistJson = JSON.stringify(reportData, null, 2);
 
+  const escapedProjectName = escapeHtml(projectName);
+  const escapedAppVersion = escapeHtml(appVersion);
+
   return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Shot List: ${projectName}</title>
+    <title>Master Shot List: ${escapedProjectName}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
@@ -176,8 +194,8 @@ export const generateMasterShotlistHtml = (
     <header class="bg-primary-dark text-primary-light p-4 shadow-lg print:hidden">
         <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
             <div>
-                <h1 class="text-3xl font-bold">${projectName}</h1>
-                <p class="text-sm text-secondary-light">Master Shot List (v${appVersion})</p>
+                <h1 class="text-3xl font-bold">${escapedProjectName}</h1>
+                <p class="text-sm text-secondary-light">Master Shot List (v${escapedAppVersion})</p>
             </div>
             <div class="text-sm text-right md:text-left mt-2 md:mt-0">
                 <p>Number of Clips: <span id="shot-count" class="font-semibold">${shotCount}</span></p>
@@ -204,8 +222,25 @@ export const generateMasterShotlistHtml = (
         </main>
     </div>
 
+    <script id="shotlist-data" type="application/json">
+        ${masterShotlistJson.replace(/</g, '\\u003c')}
+    </script>
+
     <script>
-        const masterShotlist = ${masterShotlistJson};
+        /**
+         * Escapes HTML special characters in a string.
+         */
+        function escapeHtml(unsafe) {
+            if (!unsafe || typeof unsafe !== 'string') return unsafe;
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        const masterShotlist = JSON.parse(document.getElementById('shotlist-data').textContent);
         const shots = masterShotlist.shots;
 
         document.getElementById('generation-time').textContent = new Date().toLocaleString();
@@ -223,7 +258,6 @@ export const generateMasterShotlistHtml = (
             const isContinuityLocked = shot.veo3_json.flags.continuity_lock;
             const isExtendUnit = shot.veo3_json.unit_type === 'extend'; // Check for extend unit_type
 
-            let promptText = \`\${shot.veo3_json.scene.context} \${shot.veo3_json.character.name !== 'N/A' ? shot.veo3_json.character.name + ': ' : ''}\${shot.veo3_json.character.behavior !== 'N/A' ? shot.veo3_json.character.behavior : ''} \${shot.veo3_json.camera.shot_call}.\`.replace(/\\s\\s+/g, ' ').trim();
             const veoJsonString = JSON.stringify(shot.veo3_json, null, 2);
 
             shotCard.innerHTML = \`
@@ -231,10 +265,10 @@ export const generateMasterShotlistHtml = (
                     <!-- Left Side: Image & Key Info -->
                     <div class="w-full md:w-1/3 flex-shrink-0">
                         <div class="aspect-video bg-neutral-dark rounded-md mb-3 flex items-center justify-center">
-                            \${shot.keyframe_image_b64 ? \`<img src="data:image/png;base64,\${shot.keyframe_image_b64}" class="w-full h-full object-cover rounded-md">\` : '<span class="text-neutral-light text-sm">No Keyframe</span>'}
+                            \${shot.keyframe_image_b64 ? \`<img src="data:image/png;base64,\${escapeHtml(shot.keyframe_image_b64)}" class="w-full h-full object-cover rounded-md">\` : '<span class="text-neutral-light text-sm">No Keyframe</span>'}
                         </div>
-                         <h3 class="text-lg font-bold text-primary-dark">\${shot.sequence_number}. \${shot.shot_id}</h3>
-                         <p class="text-sm text-secondary-dark">\${shot.duration_seconds} seconds</p>
+                         <h3 class="text-lg font-bold text-primary-dark">\${escapeHtml(String(shot.sequence_number))}. \${escapeHtml(shot.shot_id)}</h3>
+                         <p class="text-sm text-secondary-dark">\${escapeHtml(String(shot.duration_seconds))} seconds</p>
                          \${isContinuityLocked ? '<p class="text-sm font-semibold text-tertiary-dark mt-1">✓ Continuity Locked</p>' : ''}
                          \${hasDialogue ? '<p class="text-sm font-semibold text-green-700 mt-1">💬 Dialogue Present</p>' : ''}
                     </div>
@@ -251,22 +285,22 @@ export const generateMasterShotlistHtml = (
                             \${shot.director_notes && isExtendUnit ? \`
                                 <div class="bg-secondary-dark text-secondary-light p-3 rounded-md">
                                     <p class="font-semibold mb-1">Director's Notes (Extend Block):</p>
-                                    <pre class="whitespace-pre-wrap font-mono-custom text-xs max-h-24 overflow-auto">\${shot.director_notes}</pre>
+                                    <pre class="whitespace-pre-wrap font-mono-custom text-xs max-h-24 overflow-auto">\${escapeHtml(shot.director_notes)}</pre>
                                 </div>
                             \` : ''}
                             <div class="bg-secondary-light p-3 rounded-md font-mono-custom text-neutral-dark relative">
-                                <pre class="whitespace-pre-wrap max-h-60 overflow-auto">\${veoJsonString}</pre>
+                                <pre class="whitespace-pre-wrap max-h-60 overflow-auto">\${escapeHtml(veoJsonString)}</pre>
                                 <button class="copy-prompt-btn absolute top-2 right-2 bg-tertiary-light text-tertiary-dark px-2 py-1 rounded-md text-xs hover:bg-tertiary-dark hover:text-tertiary-light transition-colors duration-200" title="Copy JSON">Copy</button>
                             </div>
                             \${hasDialogue ? \`
                                 <p><strong class="text-secondary-dark">DIALOGUE:</strong></p>
                                 <div class="bg-secondary-light p-3 rounded-md">
-                                    <p><strong class="text-secondary-dark">Speaker:</strong> \${shot.veo3_json.character.name || 'N/A'}</p>
-                                    <p><strong class="text-secondary-dark">Line:</strong> "\${shot.veo3_json.audio.dialogue}"</p>
-                                    <p><strong class="text-secondary-dark">Delivery:</strong> \${shot.veo3_json.audio.delivery || 'N/A'}</p>
+                                    <p><strong class="text-secondary-dark">Speaker:</strong> \${escapeHtml(shot.veo3_json.character.name || 'N/A')}</p>
+                                    <p><strong class="text-secondary-dark">Line:</strong> "\${escapeHtml(shot.veo3_json.audio.dialogue)}"</p>
+                                    <p><strong class="text-secondary-dark">Delivery:</strong> \${escapeHtml(shot.veo3_json.audio.delivery || 'N/A')}</p>
                                 </div>
                             \` : ''}
-                            <p><strong class="text-secondary-dark">AUDIO:</strong> \${shot.audio_specs || 'N/A'}</p>
+                            <p><strong class="text-secondary-dark">AUDIO:</strong> \${escapeHtml(shot.audio_specs || 'N/A')}</p>
                         </div>
                     </div>
                 </div>
@@ -274,12 +308,20 @@ export const generateMasterShotlistHtml = (
             mainShotList.appendChild(shotCard);
 
             const shotIdItem = document.createElement('li');
-            shotIdItem.innerHTML = \`<a href="#shot-\${shot.sequence_number}" class="text-secondary-dark hover:text-primary-dark hover:underline">\${shot.shot_id}</a>\`;
+            const shotIdLink = document.createElement('a');
+            shotIdLink.href = \`#shot-\${shot.sequence_number}\`;
+            shotIdLink.className = 'text-secondary-dark hover:text-primary-dark hover:underline';
+            shotIdLink.textContent = shot.shot_id;
+            shotIdItem.appendChild(shotIdLink);
             shotIdList.appendChild(shotIdItem);
 
             if (isContinuityLocked) {
                 const continuityItem = document.createElement('li');
-                continuityItem.innerHTML = \`<a href="#shot-\${shot.sequence_number}" class="text-secondary-dark hover:text-primary-dark hover:underline">\${shot.shot_id}</a>\`;
+                const continuityLink = document.createElement('a');
+                continuityLink.href = \`#shot-\${shot.sequence_number}\`;
+                continuityLink.className = 'text-secondary-dark hover:text-primary-dark hover:underline';
+                continuityLink.textContent = shot.shot_id;
+                continuityItem.appendChild(continuityLink);
                 continuityList.appendChild(continuityItem);
             }
         });
