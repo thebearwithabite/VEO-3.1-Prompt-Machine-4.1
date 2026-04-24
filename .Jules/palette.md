@@ -12,3 +12,7 @@
 ## 2026-04-23 - [Add ARIA properties to image toggle buttons]
 **Learning:** Image-only buttons used for toggling states (like selecting guidance frames) are completely opaque to screen readers without proper aria-labels and aria-pressed attributes. Relying on visual borders to indicate selection state is a severe accessibility anti-pattern.
 **Action:** Always add `aria-label` (using the image's name/context), `aria-pressed` (reflecting the boolean selected state), and `alt` text to the inner image for interactive image galleries/pickers.
+
+## 2026-04-24 - [Enhance Keyboard Focus states for Hidden Inputs and Custom Buttons]
+**Learning:** Found two common accessibility patterns needing improvement. First, `className="hidden"` on file inputs prevents them from receiving keyboard focus, breaking standard form navigation. Second, using `<div onClick={...}>` for selectable lists prevents keyboard users from making selections.
+**Action:** Use `className="sr-only"` on inputs instead of `hidden` so they remain focusable, and apply `focus-within` styles to their parent `<label>` elements to show visual focus. Always add `role="button"`, `tabIndex={0}`, and an `onKeyDown` handler (listening for Enter/Space) to interactive non-button elements.
