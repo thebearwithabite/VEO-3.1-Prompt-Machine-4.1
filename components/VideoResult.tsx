@@ -277,7 +277,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
               <button 
                 onClick={() => navigator.clipboard.writeText(JSON.stringify(shot.veoJson, null, 2))}
                 aria-label="Copy JSON"
-                className="absolute top-2 right-2 p-1.5 bg-gray-800 text-gray-400 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-2 right-2 p-1.5 bg-gray-800 text-gray-400 rounded opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 transition-opacity"
               >
                   <ClipboardDocumentIcon className="w-4 h-4" />
               </button>
@@ -319,11 +319,19 @@ const ShotCard: React.FC<ShotCardProps> = ({
                               {shot.keyframeHistory.map((img, idx) => (
                                   <div 
                                       key={idx} 
-                                      className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                                      role="button"
+                                      tabIndex={0}
+                                      className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
                                           shot.keyframeImage === img ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-gray-700 hover:border-gray-500'
                                       }`}
                                       onClick={() => {
                                           onUpdateShot({ ...shot, keyframeImage: img });
+                                      }}
+                                      onKeyDown={(e) => {
+                                          if (e.key === 'Enter' || e.key === ' ') {
+                                              e.preventDefault();
+                                              onUpdateShot({ ...shot, keyframeImage: img });
+                                          }
                                       }}
                                   >
                                       <img 
@@ -623,7 +631,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
                             <button 
                                 onClick={() => onRemoveGuidanceFrame(f.id)}
                                 aria-label="Remove guidance frame"
-                                className="absolute top-1 right-1 p-0.5 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-1 right-1 p-0.5 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 transition-opacity"
                             >
                                 <XMarkIcon className="w-3 h-3" />
                             </button>
