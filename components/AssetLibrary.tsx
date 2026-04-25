@@ -258,25 +258,27 @@ const AssetCard: React.FC<{
             referrerPolicy="no-referrer"
           />
         ) : (
-          <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-700/50 transition-colors">
+          <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-700/50 transition-colors focus-within:ring-2 focus-within:ring-indigo-400 focus-within:outline-none">
             <UploadCloudIcon className="w-8 h-8 text-gray-600 mb-2" />
             <span className="text-xs text-gray-500">Upload Image</span>
             <input
               type="file"
-              className="hidden"
+              className="sr-only"
               onChange={onUpload}
               accept="image/png, image/jpeg, image/webp"
+              aria-label={`Upload image for ${asset.name}`}
             />
           </label>
         )}
         {asset.image && (
-           <label className="absolute bottom-2 right-2 bg-black/50 p-1.5 rounded-full cursor-pointer hover:bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity">
+           <label className="absolute bottom-2 right-2 bg-black/50 p-1.5 rounded-full cursor-pointer hover:bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity focus-within:ring-2 focus-within:ring-indigo-400 focus-within:outline-none focus-within:opacity-100">
              <UploadCloudIcon className="w-4 h-4 text-white" />
               <input
               type="file"
-              className="hidden"
+              className="sr-only"
               onChange={onUpload}
               accept="image/png, image/jpeg, image/webp"
+              aria-label={`Change image for ${asset.name}`}
             />
            </label>
         )}
