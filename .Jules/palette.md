@@ -12,3 +12,6 @@
 ## 2026-04-23 - [Add ARIA properties to image toggle buttons]
 **Learning:** Image-only buttons used for toggling states (like selecting guidance frames) are completely opaque to screen readers without proper aria-labels and aria-pressed attributes. Relying on visual borders to indicate selection state is a severe accessibility anti-pattern.
 **Action:** Always add `aria-label` (using the image's name/context), `aria-pressed` (reflecting the boolean selected state), and `alt` text to the inner image for interactive image galleries/pickers.
+## 2026-04-28 - Dynamic Action Buttons in Shared Dialogs
+**Learning:** The shared ConfirmDialog hardcoded its confirmation text ("Start New Project"), making all confirmations across the app confusing (e.g. approving a cost also said "Start New Project").
+**Action:** Parameterized action text and styling (`isDestructive`) for shared modal components to ensure users receive clear, contextual confirmation prompts.
