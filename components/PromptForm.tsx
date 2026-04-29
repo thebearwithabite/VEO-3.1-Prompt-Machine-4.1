@@ -227,7 +227,8 @@ const ProjectSetupForm: React.FC<ProjectSetupFormProps> = ({
               type="file"
               ref={scriptFileInputRef}
               onChange={handleScriptFileUpload}
-              className="hidden"
+              className="sr-only"
+              tabIndex={-1}
               accept=".txt,.md,.rtf,.pdf,.gdoc"
               disabled={isGenerating || isTranscribing}
             />
@@ -235,7 +236,8 @@ const ProjectSetupForm: React.FC<ProjectSetupFormProps> = ({
               type="file"
               ref={projectFileInputRef}
               onChange={handleProjectFileSelect}
-              className="hidden"
+              className="sr-only"
+              tabIndex={-1}
               accept=".json"
               disabled={isGenerating || isTranscribing}
             />
@@ -243,7 +245,8 @@ const ProjectSetupForm: React.FC<ProjectSetupFormProps> = ({
               type="file"
               ref={audioFileInputRef}
               onChange={handleAudioFileUpload}
-              className="hidden"
+              className="sr-only"
+              tabIndex={-1}
               accept="audio/*"
               disabled={isGenerating || isTranscribing}
             />
