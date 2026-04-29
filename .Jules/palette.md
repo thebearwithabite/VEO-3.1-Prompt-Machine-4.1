@@ -12,3 +12,7 @@
 ## 2026-04-23 - [Add ARIA properties to image toggle buttons]
 **Learning:** Image-only buttons used for toggling states (like selecting guidance frames) are completely opaque to screen readers without proper aria-labels and aria-pressed attributes. Relying on visual borders to indicate selection state is a severe accessibility anti-pattern.
 **Action:** Always add `aria-label` (using the image's name/context), `aria-pressed` (reflecting the boolean selected state), and `alt` text to the inner image for interactive image galleries/pickers.
+
+## 2026-04-29 - [Replace hidden with sr-only for file inputs]
+**Learning:** Using 'hidden' on custom file inputs removes them from the keyboard accessibility tree, meaning keyboard users cannot tab to them if they are wrapped in a label. On the other hand, programmatically triggered inputs using refs should use 'sr-only' and 'tabIndex={-1}' to keep them from generating confusing invisible tab stops.
+**Action:** Use 'sr-only' and 'focus-within' styling for label-wrapped file inputs, and 'sr-only' with 'tabIndex={-1}' for file inputs triggered by external buttons via refs.

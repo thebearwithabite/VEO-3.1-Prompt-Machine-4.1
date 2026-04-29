@@ -610,7 +610,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
                     >
                         <PlusIcon className="w-5 h-5" />
                     </button>
-                    <input type="file" ref={mediaInputRef} onChange={handleMediaUpload} className="hidden" accept="image/*" />
+                    <input type="file" ref={mediaInputRef} onChange={handleMediaUpload} className="sr-only" tabIndex={-1} accept="image/*" />
                 </div>
                 <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                     {guidanceFrames.map(f => (
