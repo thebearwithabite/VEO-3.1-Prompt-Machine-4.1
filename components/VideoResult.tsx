@@ -135,7 +135,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
                 </div>
             )}
             {shot.keyframeImage && (
-                <div className="absolute bottom-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute bottom-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                     {shot.keyframeHistory && shot.keyframeHistory.length > 1 && (
                         <button 
                             onClick={() => setShowHistory(true)}
@@ -277,7 +277,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
               <button 
                 onClick={() => navigator.clipboard.writeText(JSON.stringify(shot.veoJson, null, 2))}
                 aria-label="Copy JSON"
-                className="absolute top-2 right-2 p-1.5 bg-gray-800 text-gray-400 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-2 right-2 p-1.5 bg-gray-800 text-gray-400 rounded opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 transition-opacity"
               >
                   <ClipboardDocumentIcon className="w-4 h-4" />
               </button>
@@ -331,7 +331,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
                                           alt={`Version ${idx + 1}`}
                                           className="w-full h-full object-cover"
                                       />
-                                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity flex items-center justify-center">
                                           <span className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-full shadow-lg">
                                               {shot.keyframeImage === img ? 'Current Selection' : 'Select Version'}
                                           </span>
@@ -623,7 +623,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
                             <button 
                                 onClick={() => onRemoveGuidanceFrame(f.id)}
                                 aria-label="Remove guidance frame"
-                                className="absolute top-1 right-1 p-0.5 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-1 right-1 p-0.5 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 transition-opacity"
                             >
                                 <XMarkIcon className="w-3 h-3" />
                             </button>
