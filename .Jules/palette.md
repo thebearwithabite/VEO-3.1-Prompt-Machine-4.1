@@ -12,3 +12,7 @@
 ## 2026-04-23 - [Add ARIA properties to image toggle buttons]
 **Learning:** Image-only buttons used for toggling states (like selecting guidance frames) are completely opaque to screen readers without proper aria-labels and aria-pressed attributes. Relying on visual borders to indicate selection state is a severe accessibility anti-pattern.
 **Action:** Always add `aria-label` (using the image's name/context), `aria-pressed` (reflecting the boolean selected state), and `alt` text to the inner image for interactive image galleries/pickers.
+
+## 2026-04-24 - [Keyboard Accessibility for File Uploads]
+**Learning:** Using `className="hidden"` on `<input type="file" />` removes the element from the DOM's accessibility tree and keyboard tab order, breaking keyboard navigation for file uploads. Replacing it with Tailwind's `sr-only` class keeps it focusable. However, because `sr-only` hides it visually, the parent wrapper (like a `<label>`) must use `focus-within` styles to show a visual focus indicator when the inner hidden input is focused via keyboard.
+**Action:** When designing custom styled file upload areas, always use `className="sr-only"` for the `<input>` and apply `focus-within` ring/outline styles to its visual container.
