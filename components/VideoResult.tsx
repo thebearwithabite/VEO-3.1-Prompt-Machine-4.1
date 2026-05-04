@@ -319,11 +319,20 @@ const ShotCard: React.FC<ShotCardProps> = ({
                               {shot.keyframeHistory.map((img, idx) => (
                                   <div 
                                       key={idx} 
-                                      className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                                      role="button"
+                                      tabIndex={0}
+                                      aria-label={`Select keyframe version ${idx + 1}`}
+                                      className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400 ${
                                           shot.keyframeImage === img ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-gray-700 hover:border-gray-500'
                                       }`}
                                       onClick={() => {
                                           onUpdateShot({ ...shot, keyframeImage: img });
+                                      }}
+                                      onKeyDown={(e) => {
+                                          if (e.key === 'Enter' || e.key === ' ') {
+                                              e.preventDefault();
+                                              onUpdateShot({ ...shot, keyframeImage: img });
+                                          }
                                       }}
                                   >
                                       <img 
