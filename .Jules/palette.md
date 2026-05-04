@@ -15,3 +15,6 @@
 ## 2026-05-02 - Keyboard Accessibility for Hover-Revealed Elements
 **Learning:** Buttons inside elements with `opacity-0 group-hover:opacity-100` are unreachable by keyboard users because they remain visually hidden when focused. Similarly, file inputs with `className="hidden"` are completely removed from the accessibility tree and cannot receive focus.
 **Action:** Use `focus-visible:opacity-100` on the buttons, or `focus-within:opacity-100` on parent elements, to ensure they appear when focused via keyboard. For file inputs, use Tailwind's `sr-only` class instead of `hidden` so they remain focusable, and apply `focus-within` styling to their parent labels.
+## 2026-05-04 - Keyboard Accessibility for Custom Interactive Elements
+**Learning:** Found a custom interactive `div` acting as a button in `components/VideoResult.tsx` that lacked keyboard support (`role`, `tabIndex`, `onKeyDown`). It was unreachable by keyboard users.
+**Action:** When using non-button elements (like `div` or `span`) with `onClick` handlers, always ensure they are fully accessible by adding `role="button"`, `tabIndex={0}`, an appropriate `aria-label`, visible focus styles (`focus-visible` classes), and an `onKeyDown` handler to support "Enter" and "Space" key activation.
