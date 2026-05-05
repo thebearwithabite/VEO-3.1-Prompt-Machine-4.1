@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {IngredientImage, ProjectAsset} from '../types';
 import {
   ArrowRightIcon,
@@ -60,9 +60,6 @@ const ProjectSetupForm: React.FC<ProjectSetupFormProps> = ({
   const [createKeyframes, setCreateKeyframes] = useState(false); // Default to false for HIL
   const [isTranscribing, setIsTranscribing] = useState(false); // New state
 
-  const scriptFileInputRef = useRef<HTMLInputElement>(null);
-  const projectFileInputRef = useRef<HTMLInputElement>(null);
-  const audioFileInputRef = useRef<HTMLInputElement>(null); // New ref
 
   const handleScriptFileUpload = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,17 +147,6 @@ const ProjectSetupForm: React.FC<ProjectSetupFormProps> = ({
   };
 
 
-  const handleUploadClick = () => {
-    scriptFileInputRef.current?.click();
-  };
-
-  const handleLoadProjectClick = () => {
-    projectFileInputRef.current?.click();
-  };
-
-  const handleAudioUploadClick = () => {
-      audioFileInputRef.current?.click();
-  };
 
   const handleProjectFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -199,54 +185,39 @@ const ProjectSetupForm: React.FC<ProjectSetupFormProps> = ({
               Step 1: The Script
             </label>
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={handleLoadProjectClick}
-                disabled={isGenerating || isTranscribing}
-                className="flex items-center gap-2 px-3 py-1.5 bg-gray-600 hover:bg-gray-500 text-white font-semibold rounded-lg transition-colors text-sm disabled:bg-gray-700 disabled:cursor-not-allowed">
+              <label className={`flex items-center gap-2 px-3 py-1.5 bg-gray-600 hover:bg-gray-500 text-white font-semibold rounded-lg transition-colors text-sm focus-within:ring-2 focus-within:ring-indigo-400 focus-within:outline-none cursor-pointer ${isGenerating || isTranscribing ? 'opacity-50 cursor-not-allowed bg-gray-700 pointer-events-none' : ''}`}>
                 Load Project (.json)
-              </button>
-              <button
-                type="button"
-                onClick={handleUploadClick}
-                disabled={isGenerating || isTranscribing}
-                className="flex items-center gap-2 px-3 py-1.5 bg-gray-600 hover:bg-gray-500 text-white font-semibold rounded-lg transition-colors text-sm disabled:bg-gray-700 disabled:cursor-not-allowed">
+                <input
+                  type="file"
+                  onChange={handleProjectFileSelect}
+                  className="sr-only"
+                  accept=".json"
+                  disabled={isGenerating || isTranscribing}
+                />
+              </label>
+              <label className={`flex items-center gap-2 px-3 py-1.5 bg-gray-600 hover:bg-gray-500 text-white font-semibold rounded-lg transition-colors text-sm focus-within:ring-2 focus-within:ring-indigo-400 focus-within:outline-none cursor-pointer ${isGenerating || isTranscribing ? 'opacity-50 cursor-not-allowed bg-gray-700 pointer-events-none' : ''}`}>
                 <FileUploadIcon className="w-4 h-4" />
                 <span>Upload Script</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleAudioUploadClick}
-                disabled={isGenerating || isTranscribing}
-                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white font-semibold rounded-lg transition-colors text-sm disabled:bg-gray-700 disabled:cursor-not-allowed border border-indigo-500">
+                <input
+                  type="file"
+                  onChange={handleScriptFileUpload}
+                  className="sr-only"
+                  accept=".txt,.md,.rtf,.pdf,.gdoc"
+                  disabled={isGenerating || isTranscribing}
+                />
+              </label>
+              <label className={`flex items-center gap-2 px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white font-semibold rounded-lg transition-colors text-sm border border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-400 focus-within:outline-none cursor-pointer ${isGenerating || isTranscribing ? 'opacity-50 cursor-not-allowed bg-gray-700 pointer-events-none' : ''}`}>
                 <FileAudioIcon className="w-4 h-4" />
                 <span>{isTranscribing ? 'Transcribing...' : 'Upload Audio Episode'}</span>
-              </button>
+                <input
+                  type="file"
+                  onChange={handleAudioFileUpload}
+                  className="sr-only"
+                  accept="audio/*"
+                  disabled={isGenerating || isTranscribing}
+                />
+              </label>
             </div>
-            <input
-              type="file"
-              ref={scriptFileInputRef}
-              onChange={handleScriptFileUpload}
-              className="hidden"
-              accept=".txt,.md,.rtf,.pdf,.gdoc"
-              disabled={isGenerating || isTranscribing}
-            />
-            <input
-              type="file"
-              ref={projectFileInputRef}
-              onChange={handleProjectFileSelect}
-              className="hidden"
-              accept=".json"
-              disabled={isGenerating || isTranscribing}
-            />
-            <input
-              type="file"
-              ref={audioFileInputRef}
-              onChange={handleAudioFileUpload}
-              className="hidden"
-              accept="audio/*"
-              disabled={isGenerating || isTranscribing}
-            />
           </div>
           <p className="text-sm text-gray-400 mb-4">
             Paste your script, upload a text file, or upload an audio episode to auto-transcribe.
