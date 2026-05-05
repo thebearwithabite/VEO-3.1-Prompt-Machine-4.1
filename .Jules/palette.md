@@ -15,3 +15,6 @@
 ## 2026-05-02 - Keyboard Accessibility for Hover-Revealed Elements
 **Learning:** Buttons inside elements with `opacity-0 group-hover:opacity-100` are unreachable by keyboard users because they remain visually hidden when focused. Similarly, file inputs with `className="hidden"` are completely removed from the accessibility tree and cannot receive focus.
 **Action:** Use `focus-visible:opacity-100` on the buttons, or `focus-within:opacity-100` on parent elements, to ensure they appear when focused via keyboard. For file inputs, use Tailwind's `sr-only` class instead of `hidden` so they remain focusable, and apply `focus-within` styling to their parent labels.
+## 2026-05-05 - File Inputs Keyboard Accessibility
+**Learning:** Hidden file inputs (`className="hidden"`) triggered by separate buttons using React refs fail keyboard accessibility because they are removed from the accessibility tree.
+**Action:** Use `<label>` elements as the visual button, place the `<input type="file">` inside with `className="sr-only"`, and add `focus-within` styles to the label. This natively handles file selection and correctly displays keyboard focus.

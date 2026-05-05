@@ -3,7 +3,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   ApiCallSummary,
   IngredientImage,
@@ -459,8 +459,6 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
   onLogout,
 }) => {
   const [showSettings, setShowSettings] = useState(false);
-  const mediaInputRef = useRef<HTMLInputElement>(null);
-
   const groupedShots = shotBook.reduce((acc, shot) => {
       const sceneId = shot.id.substring(0, shot.id.lastIndexOf('_'));
       if (!acc[sceneId]) acc[sceneId] = [];
@@ -602,15 +600,14 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
                         <FramesModeIcon className="w-4 h-4 text-indigo-400" />
                         Media Guidance Bin
                     </h3>
-                    <button 
-                        onClick={() => mediaInputRef.current?.click()}
+                    <label
                         aria-label="Add Reference Media"
-                        className="p-1 hover:bg-gray-700 rounded text-indigo-400 transition-colors"
+                        className="p-1 hover:bg-gray-700 rounded text-indigo-400 transition-colors cursor-pointer focus-within:ring-2 focus-within:ring-indigo-400 focus-within:outline-none"
                         title="Add Reference Media"
                     >
                         <PlusIcon className="w-5 h-5" />
-                    </button>
-                    <input type="file" ref={mediaInputRef} onChange={handleMediaUpload} className="hidden" accept="image/*" />
+                        <input type="file" onChange={handleMediaUpload} className="sr-only" accept="image/*" />
+                    </label>
                 </div>
                 <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                     {guidanceFrames.map(f => (
