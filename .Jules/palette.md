@@ -15,3 +15,7 @@
 ## 2026-05-02 - Keyboard Accessibility for Hover-Revealed Elements
 **Learning:** Buttons inside elements with `opacity-0 group-hover:opacity-100` are unreachable by keyboard users because they remain visually hidden when focused. Similarly, file inputs with `className="hidden"` are completely removed from the accessibility tree and cannot receive focus.
 **Action:** Use `focus-visible:opacity-100` on the buttons, or `focus-within:opacity-100` on parent elements, to ensure they appear when focused via keyboard. For file inputs, use Tailwind's `sr-only` class instead of `hidden` so they remain focusable, and apply `focus-within` styling to their parent labels.
+
+## 2025-05-07 - Context-Aware Confirmation Dialog Buttons
+**Learning:** Hardcoded text like "Cancel" or "Start New Project" in shared `ConfirmDialog` components leads to confusing UX when the dialog is repurposed for other actions (like resetting the app or confirming Veo Generation costs).
+**Action:** Always make button text configurable via props (`confirmText` and `cancelText`) in generic dialog components and pass context-specific text from the parent component. Added focus-visible states and a specific `isDestructive` style prop to indicate critical actions clearly.
