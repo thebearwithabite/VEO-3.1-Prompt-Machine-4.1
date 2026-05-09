@@ -15,3 +15,7 @@
 ## 2026-05-02 - Keyboard Accessibility for Hover-Revealed Elements
 **Learning:** Buttons inside elements with `opacity-0 group-hover:opacity-100` are unreachable by keyboard users because they remain visually hidden when focused. Similarly, file inputs with `className="hidden"` are completely removed from the accessibility tree and cannot receive focus.
 **Action:** Use `focus-visible:opacity-100` on the buttons, or `focus-within:opacity-100` on parent elements, to ensure they appear when focused via keyboard. For file inputs, use Tailwind's `sr-only` class instead of `hidden` so they remain focusable, and apply `focus-within` styling to their parent labels.
+
+## 2024-05-10 - Generic Dialog Usability
+**Learning:** Hardcoding confirmation text (e.g., just "Start New Project" or "Confirm") in a shared generic dialog component reduces clarity when the dialog is used for vastly different contexts (e.g., creating something vs. deleting/resetting everything). Furthermore, destructive actions (like resetting all app state) without distinct visual cues fail to give users a moment of pause.
+**Action:** Enhance shared modal and dialog components to accept dynamic `confirmText`, `cancelText`, and `isDestructive` state. Ensure `role="dialog"` and appropriate `aria-*` links to the title and descriptions are included for baseline screen reader compatibility. Always implement clear focus-visible rings for keyboard navigability inside modals.
