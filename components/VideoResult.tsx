@@ -140,7 +140,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
                         <button 
                             onClick={() => setShowHistory(true)}
                             aria-label="View History"
-                            className="p-1.5 bg-black/60 text-white rounded hover:bg-indigo-600 transition-colors"
+                            className="p-1.5 bg-black/60 text-white rounded hover:bg-indigo-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:opacity-100"
                             title="View History"
                         >
                             <ClockIcon className="w-4 h-4" />
@@ -176,7 +176,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
                 <button 
                   key={idx}
                   onClick={() => onUpdateShot({...shot, keyframeImage: img})}
-                  className={`w-2 h-2 rounded-full transition-all ${shot.keyframeImage === img ? 'bg-indigo-500 scale-125' : 'bg-gray-600 hover:bg-gray-500'}`}
+                  className={`w-2 h-2 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${shot.keyframeImage === img ? 'bg-indigo-500 scale-125' : 'bg-gray-600 hover:bg-gray-500'}`}
                   aria-label={`Set active keyframe to version ${idx + 1}`}
                   title={`Version ${idx + 1}`}
                 />
