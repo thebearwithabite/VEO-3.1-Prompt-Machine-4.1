@@ -140,7 +140,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
                         <button 
                             onClick={() => setShowHistory(true)}
                             aria-label="View History"
-                            className="p-1.5 bg-black/60 text-white rounded hover:bg-indigo-600 transition-colors"
+                            className="p-1.5 bg-black/60 text-white rounded hover:bg-indigo-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:opacity-100"
                             title="View History"
                         >
                             <ClockIcon className="w-4 h-4" />
@@ -308,7 +308,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
                           <button 
                               onClick={() => setShowHistory(false)}
                               aria-label="Close history"
-                              className="p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                              className="p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
                           >
                               <XMarkIcon className="w-6 h-6" />
                           </button>
