@@ -119,12 +119,13 @@ const ShotCard: React.FC<ShotCardProps> = ({
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>
             ) : null}
             {shot.veoStatus === VeoStatus.COMPLETED && shot.veoVideoUrl ? (
-                <video src={shot.veoVideoUrl} controls className="w-full h-full object-cover" />
+                <video src={shot.veoVideoUrl} controls className="w-full h-full object-cover" aria-label={`Generated video for ${shot.id}`} />
             ) : shot.keyframeImage ? (
               <img 
                 src={shot.keyframeImage.startsWith('http') ? shot.keyframeImage : `data:image/png;base64,${shot.keyframeImage}`} 
                 className="w-full h-full object-cover" 
                 referrerPolicy="no-referrer" 
+                alt={`Keyframe preview for ${shot.id}`}
               />
             ) : (
               <div className="flex flex-col items-center text-gray-500"><FilmIcon className="w-12 h-12 mb-2" /><span className="text-sm">No Preview</span></div>
@@ -500,7 +501,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
           {user ? (
             <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5">
               {user.photoURL ? (
-                <img src={user.photoURL} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                <img src={user.photoURL} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" alt={`${user.displayName || 'User'} avatar`} />
               ) : (
                 <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
                   {user.displayName?.[0] || user.email?.[0] || 'U'}
@@ -619,6 +620,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
                                 src={f.image.base64.startsWith('http') ? f.image.base64 : `data:image/png;base64,${f.image.base64}`} 
                                 className="w-full h-full object-cover" 
                                 referrerPolicy="no-referrer" 
+                                alt={`Reference media: ${f.name}`}
                             />
                             <button 
                                 onClick={() => onRemoveGuidanceFrame(f.id)}
