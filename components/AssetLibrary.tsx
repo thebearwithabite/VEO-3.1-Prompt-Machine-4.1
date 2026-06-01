@@ -173,8 +173,9 @@ const AssetLibrary: React.FC<AssetLibraryProps> = ({
               {/* Inline Input Card for New Asset */}
               {isAddingThisType && (
                  <div className="bg-gray-800 rounded-lg border border-indigo-500/50 p-3 flex flex-col justify-center gap-2 animate-in fade-in zoom-in-95 duration-200">
-                    <p className="text-xs text-gray-400">New {section.label.slice(0, -1)} Name:</p>
+                    <label htmlFor="new-asset-name" className="text-xs text-gray-400">New {section.label.slice(0, -1)} Name:</label>
                     <input
+                      id="new-asset-name"
                       autoFocus
                       type="text"
                       className="bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500 w-full"
