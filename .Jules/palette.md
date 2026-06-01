@@ -15,3 +15,7 @@
 ## 2026-05-02 - Keyboard Accessibility for Hover-Revealed Elements
 **Learning:** Buttons inside elements with `opacity-0 group-hover:opacity-100` are unreachable by keyboard users because they remain visually hidden when focused. Similarly, file inputs with `className="hidden"` are completely removed from the accessibility tree and cannot receive focus.
 **Action:** Use `focus-visible:opacity-100` on the buttons, or `focus-within:opacity-100` on parent elements, to ensure they appear when focused via keyboard. For file inputs, use Tailwind's `sr-only` class instead of `hidden` so they remain focusable, and apply `focus-within` styling to their parent labels.
+
+## 2026-06-01 - Custom Toggle Component Accessibility
+**Learning:** When refactoring Tailwind CSS toggles to resolve accessibility issues (e.g., duplicate labels for screen readers), do not remove the primary `<label>` wrapping the visually hidden `<input>` and styled toggle `div`, as this breaks the component's interactive clickability.
+**Action:** Address duplicate labels by making the second label a `<span>` or `<div>`, while retaining the primary wrapper `<label>` for functionality.
