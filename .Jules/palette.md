@@ -15,3 +15,7 @@
 ## 2026-05-02 - Keyboard Accessibility for Hover-Revealed Elements
 **Learning:** Buttons inside elements with `opacity-0 group-hover:opacity-100` are unreachable by keyboard users because they remain visually hidden when focused. Similarly, file inputs with `className="hidden"` are completely removed from the accessibility tree and cannot receive focus.
 **Action:** Use `focus-visible:opacity-100` on the buttons, or `focus-within:opacity-100` on parent elements, to ensure they appear when focused via keyboard. For file inputs, use Tailwind's `sr-only` class instead of `hidden` so they remain focusable, and apply `focus-within` styling to their parent labels.
+
+## 2026-06-02 - Context-aware and Accessible Confirmation Dialogs
+**Learning:** Shared components like confirmation dialogs often use generic action text (e.g., "Start New Project" hardcoded, or "Confirm"), which creates poor UX in contexts like "Reset App" or "Approve Cost". Additionally, without `role="dialog"`, `aria-modal="true"`, and appropriate `aria-labelledby`/`describedby` attributes, these modals are inaccessible to screen readers. Finally, destructive actions need clear visual indicators (like a red button) to prevent accidental clicks.
+**Action:** Always design shared dialog components to accept dynamic `confirmText`, `cancelText`, and `isDestructive` props to adapt to different contexts. Ensure all modal dialogs include proper ARIA roles and labels (`role="dialog"`, `aria-modal="true"`, `aria-labelledby`, `aria-describedby`).
