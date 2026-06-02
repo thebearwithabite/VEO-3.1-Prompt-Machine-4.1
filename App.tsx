@@ -1119,15 +1119,16 @@ const App: React.FC = () => {
             }} 
           />
       )}
-      <ConfirmDialog isOpen={showNewProjectDialog} title="Start New Project?" message="Clear script and shot list? Assets will be kept." onConfirm={() => { setShotBook(null); setProjectName(null); setLogEntries([]); setAppState(AppState.IDLE); setShowNewProjectDialog(false); }} onCancel={() => setShowNewProjectDialog(false)} />
+      <ConfirmDialog confirmText="Start New Project" isOpen={showNewProjectDialog} title="Start New Project?" message="Clear script and shot list? Assets will be kept." onConfirm={() => { setShotBook(null); setProjectName(null); setLogEntries([]); setAppState(AppState.IDLE); setShowNewProjectDialog(false); }} onCancel={() => setShowNewProjectDialog(false)} />
       <ConfirmDialog 
           isOpen={!!showVeoApproval} 
           title="Approve Veo Generation Cost" 
           message={`Generating this video with Veo 3.1 Lite will cost approximately $${showVeoApproval?.cost.toFixed(2)}. Do you want to proceed?`} 
           onConfirm={confirmGenerateVeoVideo} 
           onCancel={() => setShowVeoApproval(null)} 
+          confirmText="Proceed"
       />
-      <ConfirmDialog isOpen={showResetDialog} title="Reset Application?" message="This will clear ALL data including assets and guidance frames. This cannot be undone." onConfirm={() => { setShotBook(null); setProjectName(null); setLogEntries([]); setAppState(AppState.IDLE); setAssets([]); setGuidanceFrames([]); setApiCallSummary({ pro: 0, flash: 0, image: 0, veo: 0, veoSeconds: 0, proTokens: {input: 0, output: 0}, flashTokens: {input: 0, output: 0} }); localStorage.removeItem(LOCAL_STORAGE_KEY); setShowResetDialog(false); }} onCancel={() => setShowResetDialog(false)} />
+      <ConfirmDialog confirmText="Reset App" isDestructive={true} isOpen={showResetDialog} title="Reset Application?" message="This will clear ALL data including assets and guidance frames. This cannot be undone." onConfirm={() => { setShotBook(null); setProjectName(null); setLogEntries([]); setAppState(AppState.IDLE); setAssets([]); setGuidanceFrames([]); setApiCallSummary({ pro: 0, flash: 0, image: 0, veo: 0, veoSeconds: 0, proTokens: {input: 0, output: 0}, flashTokens: {input: 0, output: 0} }); localStorage.removeItem(LOCAL_STORAGE_KEY); setShowResetDialog(false); }} onCancel={() => setShowResetDialog(false)} />
       <StorageInfoDialog isOpen={showStorageInfoDialog} onClose={() => setShowStorageInfoDialog(false)} />
       <main className="flex flex-col items-center p-4 md:p-8 min-h-screen max-w-[1920px] mx-auto">
         {appState === AppState.IDLE && (
