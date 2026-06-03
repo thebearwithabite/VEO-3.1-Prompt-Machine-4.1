@@ -124,6 +124,7 @@ const ShotCard: React.FC<ShotCardProps> = ({
               <img 
                 src={shot.keyframeImage.startsWith('http') ? shot.keyframeImage : `data:image/png;base64,${shot.keyframeImage}`} 
                 className="w-full h-full object-cover" 
+                alt={`Keyframe for ${shot.id}`}
                 referrerPolicy="no-referrer" 
               />
             ) : (
@@ -500,7 +501,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
           {user ? (
             <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5">
               {user.photoURL ? (
-                <img src={user.photoURL} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                <img src={user.photoURL} className="w-6 h-6 rounded-full" alt={`${user.displayName || user.email?.split('@')[0] || 'User'} avatar`} referrerPolicy="no-referrer" />
               ) : (
                 <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
                   {user.displayName?.[0] || user.email?.[0] || 'U'}
@@ -618,6 +619,7 @@ const ShotBookDisplay: React.FC<ShotBookDisplayProps> = ({
                             <img 
                                 src={f.image.base64.startsWith('http') ? f.image.base64 : `data:image/png;base64,${f.image.base64}`} 
                                 className="w-full h-full object-cover" 
+                                alt={f.name}
                                 referrerPolicy="no-referrer" 
                             />
                             <button 

@@ -15,3 +15,6 @@
 ## 2026-05-02 - Keyboard Accessibility for Hover-Revealed Elements
 **Learning:** Buttons inside elements with `opacity-0 group-hover:opacity-100` are unreachable by keyboard users because they remain visually hidden when focused. Similarly, file inputs with `className="hidden"` are completely removed from the accessibility tree and cannot receive focus.
 **Action:** Use `focus-visible:opacity-100` on the buttons, or `focus-within:opacity-100` on parent elements, to ensure they appear when focused via keyboard. For file inputs, use Tailwind's `sr-only` class instead of `hidden` so they remain focusable, and apply `focus-within` styling to their parent labels.
+## 2026-06-03 - [Added missing alt text to images]
+**Learning:** Keyframe images, user avatars, and reference media were completely lacking `alt` text. Screen readers depend on this text to convey the content of images.
+**Action:** Add descriptive `alt` attributes using available data like ID, display name, and file name to all `<img>` elements.
