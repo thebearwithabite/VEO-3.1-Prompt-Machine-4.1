@@ -44,8 +44,9 @@ const ApiKeyDialog: React.FC<ApiKeyDialogProps> = ({onContinue}) => {
           .
         </p>
         <button
+          type="button"
           onClick={onContinue}
-          className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors text-lg">
+          className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800">
           Continue to Select API Key
         </button>
       </div>

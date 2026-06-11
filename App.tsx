@@ -631,8 +631,11 @@ const App: React.FC = () => {
             setShowApiKeyDialog(true);
             return;
         }
-    } else if (!process.env.API_KEY && !showApiKeyDialog) {
+    } else if (typeof process !== 'undefined' && process.env && !process.env.API_KEY && !showApiKeyDialog) {
         // Fallback for environments without window.aistudio
+        setShowApiKeyDialog(true);
+        return;
+    } else if (typeof process === 'undefined' && !showApiKeyDialog) {
         setShowApiKeyDialog(true);
         return;
     }
