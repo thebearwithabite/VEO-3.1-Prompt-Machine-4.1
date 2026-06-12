@@ -19,3 +19,7 @@
 ## 2026-05-15 - Context-Aware Confirmation Dialog Buttons
 **Learning:** Hardcoded button text in reusable components (like ConfirmDialog always saying "Start New Project") creates extremely confusing UX when the dialog is repurposed for other actions like "Reset Application" or "Approve Cost". In addition, destructive actions lack visual distinction from standard actions.
 **Action:** Always provide props to customize button text (`confirmText`, `cancelText`) in reusable dialogs, and use an `isDestructive` boolean prop to alter the primary action styling (e.g. red background, red icon) when the confirmation will delete data or incur costs. Ensure proper `role="dialog"` and `aria-labelledby`/`aria-describedby` are included for accessibility.
+
+## 2026-05-18 - Added loading state to async Veo action buttons
+**Learning:** For actions like "Generate Video" that queue up long-running backend tasks and have intermediate states (e.g. QUEUED, GENERATING), using static buttons causes user uncertainty and potential double-clicks.
+**Action:** Always map backend statuses to clear UI indicators: disable the button and show a spinner with text like "Queued..." or "Generating..." to provide continuous feedback until the action reaches a terminal state (COMPLETED/FAILED).
