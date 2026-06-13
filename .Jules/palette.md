@@ -19,3 +19,6 @@
 ## 2026-05-15 - Context-Aware Confirmation Dialog Buttons
 **Learning:** Hardcoded button text in reusable components (like ConfirmDialog always saying "Start New Project") creates extremely confusing UX when the dialog is repurposed for other actions like "Reset Application" or "Approve Cost". In addition, destructive actions lack visual distinction from standard actions.
 **Action:** Always provide props to customize button text (`confirmText`, `cancelText`) in reusable dialogs, and use an `isDestructive` boolean prop to alter the primary action styling (e.g. red background, red icon) when the confirmation will delete data or incur costs. Ensure proper `role="dialog"` and `aria-labelledby`/`aria-describedby` are included for accessibility.
+## 2024-06-13 - Missing alt text on dynamic images
+**Learning:** Dynamic images (like base64 keyframes or user avatars) often get overlooked for `alt` text since they lack a static filename to fall back on, leaving screen readers with raw base64 data or silence.
+**Action:** Always verify that dynamically sourced `<img>` tags (`src={...}`) receive a contextual `alt` prop that describes their content (e.g., "Keyframe for {shot.id}" or "User avatar").
